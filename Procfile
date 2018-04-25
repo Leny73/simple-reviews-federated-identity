@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/simple-reviews -Dhttp.port=$PORT
+web: target/universal/stage/bin/simple-reviews -Dhttp.port=$PORT -Dconfig.file=resources/src/main/application-heroku.conf
