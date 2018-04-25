@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/simple-reviews $JAVA_OPTS
+web: target/universal/stage/bin/simple-reviews -Dhttp.port=$PORT $JAVA_OPTS

@@ -14,6 +14,7 @@ lazy val root =
     .settings(
       inThisBuild(List(
         organization    := "org.simplereviews",
+        version         := "1.0",
         scalaVersion    := "2.11.11"
       )),
       name := "simple-reviews",
