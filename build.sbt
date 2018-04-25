@@ -32,4 +32,6 @@ lazy val root =
           "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
           "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
           "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test,
-          "org.byrde"         %  "commons_2.11"         % "1.0.77") ++ dependencyInjectionLibraries :+ jsonParsingLibrary)
+          "org.byrde"         %  "commons_2.11"         % "1.0.77") ++ dependencyInjectionLibraries :+ jsonParsingLibrary).enablePlugins(JavaAppPackaging)
+
+Revolver.settings
