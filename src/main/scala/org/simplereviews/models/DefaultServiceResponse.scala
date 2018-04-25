@@ -1,10 +1,13 @@
-package challenge.models
+package org.simplereviews.models
 
-import play.api.libs.json.{ JsString, Writes }
+import org.simplereviews.utils.WritesUtils
+
+import play.api.libs.json.Writes
 
 trait DefaultServiceResponse extends ServiceResponse[String] {
   override implicit val writes: Writes[String] =
-    (o: String) => JsString(o)
+    WritesUtils.string
+
   override val response: String =
     msg
 }

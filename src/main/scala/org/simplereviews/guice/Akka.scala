@@ -1,8 +1,8 @@
-package challenge.guice
-
-import challenge.configuration.Configuration
+package org.simplereviews.guice
 
 import com.google.inject.Inject
+
+import org.simplereviews.configuration.Configuration
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer

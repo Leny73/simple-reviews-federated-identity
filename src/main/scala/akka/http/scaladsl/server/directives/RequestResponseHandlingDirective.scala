@@ -2,8 +2,8 @@ package akka.http.scaladsl.server.directives
 
 import java.util.UUID
 
-import challenge.logger.impl.{ ErrorLogger, RequestLogger }
-import challenge.models.exceptions.ServiceResponseException
+import org.simplereviews.logger.impl.{ ErrorLogger, RequestLogger }
+import org.simplereviews.models.exceptions.ServiceResponseException
 
 import akka.http.scaladsl.model.{ HttpRequest, IdHeader }
 import akka.http.scaladsl.server.Directives._
@@ -20,7 +20,7 @@ trait RequestResponseHandlingDirective {
         addRequestId(id) {
           addResponseId(id) {
             val start = System.currentTimeMillis
-            tagAndLogRequest(request, id, start) {
+            bagAndTag(request, id, start) {
               handleExceptions(exceptionHandler(request)) {
                 route
               }
@@ -67,7 +67,7 @@ trait RequestResponseHandlingDirective {
         headers
     }
 
-  private def tagAndLogRequest(req: HttpRequest, id: IdHeader, start: Long): Directive0 =
+  private def bagAndTag(req: HttpRequest, id: IdHeader, start: Long): Directive0 =
     mapResponse { response =>
       requestLogger.request(id.value(), System.currentTimeMillis() - start, response.status.toString(), req)
       response

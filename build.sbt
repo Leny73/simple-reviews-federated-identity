@@ -26,7 +26,7 @@ lazy val root =
           "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
           "com.typesafe.akka" %% "akka-http-xml"        % akkaHttpVersion,
           "com.typesafe.akka" %% "akka-stream"          % akkaVersion,
-          "de.heikoseeberger" %% "akka-http-circe"      % "1.20.0",
+          "de.heikoseeberger" %% "akka-http-play-json"  % "1.17.0",
 
           "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
           "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,

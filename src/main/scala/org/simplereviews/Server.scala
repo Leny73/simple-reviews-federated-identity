@@ -1,10 +1,10 @@
-package org.byrde
-
-import challenge.guice.Modules
-import challenge.guice.modules.ModuleBindings
-import challenge.logger.impl.{ ErrorLogger, RequestLogger }
+package org.simplereviews
 
 import com.google.inject.Guice
+
+import org.simplereviews.guice.Modules
+import org.simplereviews.guice.modules.ModuleBindings
+import org.simplereviews.logger.impl.{ ErrorLogger, RequestLogger }
 
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer

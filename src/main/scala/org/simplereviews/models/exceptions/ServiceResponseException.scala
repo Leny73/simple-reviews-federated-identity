@@ -1,14 +1,16 @@
-package challenge.models.exceptions
+package org.simplereviews.models.exceptions
 
-import challenge.models.{ DefaultServiceResponse, ServiceResponse }
+import org.simplereviews.models.{ DefaultServiceResponse, ServiceResponse }
 
 import play.api.libs.json.Writes
 
 case class ServiceResponseException(private val _msg: String, private val _code: Int, private val _status: Int) extends Exception(_msg) with DefaultServiceResponse {
   override val msg: String =
     _msg
+
   override val status: Int =
     _status
+
   override val code: Int =
     _code
 }

@@ -1,4 +1,4 @@
-package challenge.utils
+package org.simplereviews.utils
 
 object OptionUtils {
   implicit class Any2Some[T](value: T) {

@@ -1,13 +1,11 @@
-package challenge.logger.impl
+package org.simplereviews.logger.impl
 
-import challenge.guice.Modules
-import challenge.logger.{ Logger, LoggingInformation }
-
-import com.google.inject.Inject
+import org.simplereviews.guice.Modules
+import org.simplereviews.logger.{ Logger, LoggingInformation }
 
 import akka.event.{ Logging, LoggingAdapter }
 
-class ErrorLogger @Inject() (modules: Modules) extends Logger {
+class ErrorLogger(modules: Modules) extends Logger {
   override protected val logger: LoggingAdapter =
     Logging(modules.akka.actorSystem, getClass)
 
