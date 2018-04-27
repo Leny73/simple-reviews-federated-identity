@@ -2,6 +2,7 @@ package org.simplereviews
 
 import com.google.inject.Guice
 
+import org.simplereviews.controllers.Routes
 import org.simplereviews.guice.Modules
 import org.simplereviews.guice.modules.ModuleBindings
 import org.simplereviews.logger.impl.{ ErrorLogger, RequestLogger }
@@ -22,7 +23,7 @@ object Server extends App with Routes {
     modules.requestLogger
 
   implicit val materializer: ActorMaterializer =
-    modules.akka.actorMaterializer
+    modules.akka.materializer
 
   Http().bindAndHandle(routes, modules.configuration.interface, modules.configuration.port)
 }

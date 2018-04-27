@@ -1,13 +1,24 @@
 lazy val akkaHttpVersion = "10.0.11"
 lazy val akkaVersion    = "2.5.11"
 
-lazy val dependencyInjectionLibraries =
-  Seq(
-    "com.google.inject.extensions" % "guice-assistedinject" % "4.1.0",
-    "net.codingwell" %% "scala-guice" % "4.1.0")
-
 lazy val jsonParsingLibrary =
   "com.typesafe.play" %% "play-json" % "2.6.9"
+
+lazy val utils =
+  Seq(
+    "net.codingwell" %% "scala-guice" % "4.1.0",
+    "io.igl" %% "jwt" % "1.2.0",
+    "de.svenkubiak" % "jBCrypt" % "0.4.1",
+    "org.byrde" % "commons_2.11" % "1.0.77")
+
+lazy val orm =
+  Seq(
+    "com.typesafe.slick" % "slick-hikaricp_2.11" % "3.2.0",
+    "com.typesafe.slick" % "slick_2.11" % "3.2.0")
+
+lazy val postgresql =
+  Seq (
+    "org.postgresql" % "postgresql" % "9.4.1212")
 
 lazy val root =
   (project in file("."))
@@ -32,7 +43,6 @@ lazy val root =
           "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
           "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
           "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
-          "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test,
-          "org.byrde"         %  "commons_2.11"         % "1.0.77") ++ dependencyInjectionLibraries :+ jsonParsingLibrary).enablePlugins(JavaAppPackaging)
+          "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test) ++ utils ++ orm ++ postgresql :+ jsonParsingLibrary).enablePlugins(JavaAppPackaging)
 
 Revolver.settings

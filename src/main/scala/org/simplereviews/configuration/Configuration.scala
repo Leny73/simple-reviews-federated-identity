@@ -1,7 +1,12 @@
 package org.simplereviews.configuration
 
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
+
 import com.google.inject.Inject
 import com.typesafe.config.{ Config, ConfigFactory }
+
+import org.byrde.commons.utils.auth.conf.JwtConfig
 
 import akka.util.Timeout
 
@@ -11,15 +16,27 @@ class Configuration @Inject() () {
   lazy val underlyingConfig: Config =
     ConfigFactory.load().resolve()
 
+  lazy val underlyingPlayConfig =
+    play.api.Configuration(underlyingConfig)
+
+  lazy val underlyingAkkaConfiguration: Config =
+    underlyingConfig.getConfig("akka.server")
+
   lazy val name: String =
-    underlyingConfig.getString("akka.server.name")
+    underlyingAkkaConfiguration.getString("name")
 
   lazy val interface: String =
-    underlyingConfig.getString("akka.server.interface")
+    underlyingAkkaConfiguration.getString("interface")
 
   lazy val port: Int =
-    underlyingConfig.getInt("akka.server.port")
+    underlyingAkkaConfiguration.getInt("port")
 
   lazy val timeout: Timeout =
-    Timeout(underlyingConfig.getInt("akka.server.timeout") seconds)
+    Timeout(underlyingAkkaConfiguration.getInt("request-timeout") seconds)
+
+  lazy val jwtConfiguration: JwtConfig =
+    JwtConfig.apply(underlyingPlayConfig.get[play.api.Configuration]("jwt-config.client"))
+
+  lazy val jdbcConfiguration: DatabaseConfig[JdbcProfile] =
+    DatabaseConfig.forConfig("db")
 }

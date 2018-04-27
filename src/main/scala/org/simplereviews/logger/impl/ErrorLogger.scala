@@ -7,7 +7,7 @@ import akka.event.{ Logging, LoggingAdapter }
 
 class ErrorLogger(modules: Modules) extends Logger {
   override protected val logger: LoggingAdapter =
-    Logging(modules.akka.actorSystem, getClass)
+    Logging(modules.akka.system, getClass)
 
   def error[T](throwable: Throwable, elem: T)(implicit loggingInformation: LoggingInformation[(Exception, T)]): Unit =
     error(new Exception(throwable), elem)

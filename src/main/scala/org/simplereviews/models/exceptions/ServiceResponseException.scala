@@ -13,6 +13,9 @@ case class ServiceResponseException(private val _msg: String, private val _code:
 
   override val code: Int =
     _code
+
+  override val response: String =
+    _msg
 }
 
 object ServiceResponseException {
@@ -26,5 +29,6 @@ object ServiceResponseException {
     E0500.copy(_msg = ex.getMessage)
 
   object E0400 extends ServiceResponseException("Bad Request", 400, 400)
+  object E0401 extends ServiceResponseException("Unauthorized", 401, 401)
   object E0500 extends ServiceResponseException("Internal Server Error", 500, 500)
 }

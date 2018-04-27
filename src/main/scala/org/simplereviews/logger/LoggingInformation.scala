@@ -1,10 +1,11 @@
 package org.simplereviews.logger
 
+import org.simplereviews.services.ServiceRequestResponse
 import org.simplereviews.utils.OptionUtils._
 
 import play.api.libs.json.{ JsObject, JsString, Json }
 
-import akka.http.scaladsl.model.{ HttpRequest, IdHeader }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, IdHeader }
 import akka.http.scaladsl.server.directives.HttpRequestWithEntity
 
 trait LoggingInformation[-T] {
@@ -30,6 +31,33 @@ object LoggingInformation {
           "method" -> elem.method.value.toString,
           "headers" -> elem.headers.map(header => s"${header.name}: ${header.value}"),
           "cookies" -> elem.cookies.map(cookie => s"${cookie.name}: ${cookie.value}")
+        )
+    }
+
+  implicit def httpRequestWithEntity[T]: LoggingInformation[HttpRequestWithEntity[T]] =
+    new LoggingInformation[HttpRequestWithEntity[T]] {
+      override def log(elem: HttpRequestWithEntity[T]): JsObject = {
+        val req =
+          elem.request
+
+        val bodyOpt =
+          if (elem.body.toString.isEmpty)
+            None
+          else
+            elem.body.toString.?
+
+        bodyOpt.fold(httpRequestInformation(req)) { body =>
+          httpRequestInformation(req) ++ Json.obj("body" -> body)
+        }
+      }
+    }
+
+  implicit val httpResponseInformation: LoggingInformation[HttpResponse] =
+    new LoggingInformation[HttpResponse] {
+      override def log(elem: HttpResponse): JsObject =
+        Json.obj(
+          "status" -> elem.status.toString(),
+          "headers" -> elem.headers.map(header => s"${header.name}: ${header.value}")
         )
     }
 
@@ -69,21 +97,15 @@ object LoggingInformation {
       }
     }
 
-  implicit def httpRequestWithEntity[T]: LoggingInformation[HttpRequestWithEntity[T]] =
-    new LoggingInformation[HttpRequestWithEntity[T]] {
-      override def log(elem: HttpRequestWithEntity[T]): JsObject = {
-        val req =
-          elem.request
-
-        val bodyOpt =
-          if (elem.body.toString.isEmpty)
-            None
-          else
-            elem.body.toString.?
-
-        bodyOpt.fold(httpRequestInformation(req)) { body =>
-          httpRequestInformation(req) ++ Json.obj("body" -> body)
-        }
-      }
+  implicit def serviceRequestResponse[T]: LoggingInformation[ServiceRequestResponse[T]] =
+    new LoggingInformation[ServiceRequestResponse[T]] {
+      override def log(elem: ServiceRequestResponse[T]): JsObject =
+        Json.obj(
+          "service" -> elem.service.nameForLoggingString,
+          "epoch" -> s"${elem.epoch}ms",
+          "request" -> httpRequestWithEntity(elem.originalRequest),
+          "serviceRequest" -> httpRequestWithEntity(elem.request),
+          "serviceResponse" -> httpResponseInformation(elem.response)
+        )
     }
 }

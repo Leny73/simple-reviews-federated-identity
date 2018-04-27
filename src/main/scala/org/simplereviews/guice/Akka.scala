@@ -8,8 +8,9 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 
 class Akka @Inject() (configuration: Configuration) {
-  val actorSystem: ActorSystem =
+  val system: ActorSystem =
     ActorSystem(configuration.name, configuration.underlyingConfig)
-  val actorMaterializer: ActorMaterializer =
-    ActorMaterializer()(actorSystem)
+
+  val materializer: ActorMaterializer =
+    ActorMaterializer()(system)
 }
