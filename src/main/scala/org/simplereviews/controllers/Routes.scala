@@ -42,10 +42,8 @@ trait Routes extends PlayJsonSupport with RequestResponseHandlingDirective with 
 
   lazy val routes: Route =
     requestResponseHandler {
-      pathPrefix("api") {
-        pathBindings.map {
-          case (k, v) => pathPrefix(k)(v)
-        } reduce (_ ~ _)
-      }
+      pathBindings.map {
+        case (k, v) => pathPrefix(k)(v)
+      } reduce (_ ~ _)
     }
 }

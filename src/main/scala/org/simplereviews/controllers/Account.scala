@@ -5,6 +5,7 @@ import io.igl.jwt.Sub
 
 import org.byrde.commons.utils.auth.JsonWebTokenWrapper
 import org.byrde.commons.utils.auth.conf.JwtConfig
+import org.simplereviews.controllers.directives.AuthenticationDirective
 import org.simplereviews.controllers.requests.LoginRequest
 import org.simplereviews.guice.Modules
 import org.simplereviews.models.DefaultServiceResponse
@@ -21,20 +22,23 @@ import akka.http.scaladsl.server.Route
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Success
 
-class Account(modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective {
+class Account(modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirective {
   type JWT = String
 
   val jwtConfig: JwtConfig =
     modules.configuration.jwtConfiguration
 
   lazy val routes: Route =
-    path("login") {
+    authenticate ~ authenticated
+
+  private def authenticate: Route =
+    path("authenticate") {
       post {
         extractClientIP { ip =>
           requestWithEntity(unmarshaller[LoginRequest]) { request =>
             onComplete(login(ip)(request)) {
               case Success(jwt) if jwt.nonEmpty =>
-                respondWithHeader(RawHeader("Set-Cookie", s"${jwtConfig.tokenName}=${jwt.get}")) {
+                respondWithHeader(RawHeader("Authorization", s"Bearer ${jwt.get}")) {
                   complete(StatusCodes.OK, Json.toJson(DefaultServiceResponse.success("Success")))
                 }
               case _ =>
@@ -45,17 +49,23 @@ class Account(modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonS
       }
     }
 
+  private def authenticated: Route =
+    path("authenticated") {
+      extractClientIP { ip =>
+        isAuthenticated(jwtConfig.copy(saltOpt = salt(ip))) { _ =>
+          complete(StatusCodes.OK, Json.toJson(DefaultServiceResponse.success("Success")))
+        }
+      }
+    }
+
   protected def login(remoteAddress: RemoteAddress)(implicit request: HttpRequestWithEntity[LoginRequest]): Future[Option[JWT]] =
     modules.persistence.userDAO.findByUsernameAndPassword(request.body.username, request.body.password).map {
       _.map { user =>
         val claims =
           Seq(Sub(user.id.toString))
 
-        val salt =
-          remoteAddress.toOption.map(_.getHostAddress)
-
         JsonWebTokenWrapper(
-          jwtConfig.copy(saltOpt = salt)
+          jwtConfig.copy(saltOpt = salt(remoteAddress))
         ).encode(claims)
       }
     }
