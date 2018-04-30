@@ -1,14 +1,34 @@
 package akka.http.scaladsl.server.directives
 
+import akka.http.scaladsl.model.StatusCodes.MethodNotAllowed
+import akka.http.scaladsl.model.headers.Allow
+import akka.http.scaladsl.server.Directives.{complete, options, respondWithHeader}
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.directives.BasicDirectives.{ cancelRejections, extractRequestContext, provide }
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.directives.BasicDirectives.{cancelRejections, extractRequestContext, provide}
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
 import akka.http.scaladsl.server.directives.RouteDirectives.reject
-import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, FromRequestUnmarshaller, Unmarshaller }
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 trait MarshallingEntityWithRequestDirective {
+  implicit val _: RejectionHandler =
+    RejectionHandler.newBuilder()
+      .handleAll[MethodRejection] { rejections =>
+        lazy val methods = rejections.map(_.supported)
+        lazy val names = methods.map(_.name).mkString ", "
+
+        respondWithHeader(Allow(methods)) {
+          options {
+            complete(s"Supported methods : $names")
+          } ~
+            complete(MethodNotAllowed,
+              s"HTTP method not allowed, supported methods: $names")
+        }
+      }
+      .result()
+
   def requestWithEntity[T](um: FromEntityUnmarshaller[T]): Directive1[HttpRequestWithEntity[T]] =
     extractRequestContext.flatMap[Tuple1[HttpRequestWithEntity[T]]] { ctx ⇒
       import ctx.{ executionContext, materializer }
