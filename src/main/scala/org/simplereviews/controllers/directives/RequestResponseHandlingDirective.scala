@@ -68,6 +68,7 @@ trait RequestResponseHandlingDirective extends PlayJsonSupport {
     mapResponseHeaders { headers =>
       id +:
         RawHeader("Access-Control-Expose-Headers", "Content-Disposition") +:
+        RawHeader("Access-Control-Expose-Headers", "Authorization") +:
         headers
     }
 
