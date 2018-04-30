@@ -17,7 +17,7 @@ import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext
 
-trait Routes extends PlayJsonSupport with RequestResponseHandlingDirective with MarshallingEntityWithRequestDirective {
+trait Routes extends PlayJsonSupport with RequestResponseHandlingDirective with MarshallingEntityWithRequestDirective with WithRejectionHandler {
   def modules: Modules
 
   implicit val timeout: Timeout =

@@ -22,7 +22,7 @@ import akka.http.scaladsl.server.Route
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Success
 
-class Account(modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirective {
+class Account(modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirective with WithRejectionHandler {
   type JWT = String
 
   val jwtConfig: JwtConfig =
