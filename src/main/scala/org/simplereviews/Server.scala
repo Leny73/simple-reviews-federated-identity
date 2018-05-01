@@ -2,6 +2,7 @@ package org.simplereviews
 
 import com.google.inject.Guice
 
+import org.simplereviews.configuration.CORSConfiguration
 import org.simplereviews.controllers.Routes
 import org.simplereviews.guice.Modules
 import org.simplereviews.guice.modules.ModuleBindings
@@ -21,6 +22,9 @@ object Server extends App with Routes {
 
   override lazy val requestLogger: RequestLogger =
     modules.requestLogger
+
+  override lazy val corsConfiguration: CORSConfiguration =
+    modules.configuration.corsConfiguration
 
   implicit val materializer: ActorMaterializer =
     modules.akka.materializer

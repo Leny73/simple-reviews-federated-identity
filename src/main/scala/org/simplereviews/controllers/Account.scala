@@ -22,7 +22,7 @@ import akka.http.scaladsl.server.Route
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Success
 
-class Account(modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirective with WithRejectionHandler {
+class Account(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirective {
   type JWT = String
 
   val jwtConfig: JwtConfig =
@@ -38,7 +38,7 @@ class Account(modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonS
           requestWithEntity(unmarshaller[LoginRequest]) { request =>
             onComplete(login(ip)(request)) {
               case Success(jwt) if jwt.nonEmpty =>
-                respondWithHeader(RawHeader("Authorization", s"Bearer ${jwt.get}")) {
+                respondWithHeader(RawHeader(jwtConfig.tokenName, s"Bearer ${jwt.get}")) {
                   complete(StatusCodes.OK, Json.toJson(DefaultServiceResponse.success("Success")))
                 }
               case _ =>
@@ -51,9 +51,11 @@ class Account(modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonS
 
   private def authenticated: Route =
     path("authenticated") {
-      extractClientIP { ip =>
-        isAuthenticated(jwtConfig.copy(saltOpt = salt(ip))) { _ =>
-          complete(StatusCodes.OK, Json.toJson(DefaultServiceResponse.success("Success")))
+      get {
+        extractClientIP { ip =>
+          isAuthenticated(jwtConfig.copy(saltOpt = salt(ip))) { _ =>
+            complete(StatusCodes.OK, Json.toJson(DefaultServiceResponse.success("Success")))
+          }
         }
       }
     }

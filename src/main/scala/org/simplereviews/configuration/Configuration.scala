@@ -10,6 +10,7 @@ import org.byrde.commons.utils.auth.conf.JwtConfig
 
 import akka.util.Timeout
 
+import collection.JavaConverters._
 import scala.concurrent.duration._
 
 class Configuration @Inject() () {
@@ -33,6 +34,11 @@ class Configuration @Inject() () {
 
   lazy val timeout: Timeout =
     Timeout(underlyingAkkaConfiguration.getInt("request-timeout") seconds)
+
+  lazy val corsConfiguration: CORSConfiguration =
+    CORSConfiguration(
+      underlyingAkkaConfiguration.getStringList("cors.origins").asScala,
+      underlyingAkkaConfiguration.getStringList("cors.headers").asScala)
 
   lazy val jwtConfiguration: JwtConfig =
     JwtConfig.apply(underlyingPlayConfig.get[play.api.Configuration]("jwt-config.client"))

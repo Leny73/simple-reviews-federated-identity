@@ -18,7 +18,7 @@ trait AuthenticationDirective extends PlayJsonSupport {
     "(^Bearer) (.+)".r
 
   def isAuthenticated(jwtConfig: JwtConfig): Directive1[Jwt] =
-    optionalHeaderValueByName("Authorization")
+    optionalHeaderValueByName(jwtConfig.tokenName)
       .flatMap {
         _.flatMap {
           case Bearer(_, raw) =>

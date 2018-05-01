@@ -1,12 +1,12 @@
 package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.directives.BasicDirectives.{cancelRejections, extractRequestContext, provide}
+import akka.http.scaladsl.server.directives.BasicDirectives.{ cancelRejections, extractRequestContext, provide }
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
 import akka.http.scaladsl.server.directives.RouteDirectives.reject
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
+import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, Unmarshaller }
 
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 trait MarshallingEntityWithRequestDirective {
   def requestWithEntity[T](um: FromEntityUnmarshaller[T]): Directive1[HttpRequestWithEntity[T]] =

@@ -3,34 +3,35 @@ package org.simplereviews.controllers.directives
 import java.util.UUID
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 
-import org.simplereviews.logger.impl.{ErrorLogger, RequestLogger}
+import org.simplereviews.logger.impl.{ ErrorLogger, RequestLogger }
 import org.simplereviews.models.exceptions.ServiceResponseException
 
 import play.api.libs.json.Json
 
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.{HttpRequest, IdHeader}
+import akka.http.scaladsl.model.{ HttpRequest, IdHeader }
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive0, Directive1, ExceptionHandler, Route}
+import akka.http.scaladsl.server.{ Directive0, Directive1, ExceptionHandler, Route }
 
-trait RequestResponseHandlingDirective extends PlayJsonSupport {
+trait RequestResponseHandlingDirective extends PlayJsonSupport with RejectionHandlerDirective {
   def requestLogger: RequestLogger
 
   def errorLogger: ErrorLogger
 
   def requestResponseHandler(route: Route): Route =
-    requestId {
-      case (request, id) =>
-        handleExceptions(exceptionHandler(request)) {
-          addRequestId(id) {
-            addResponseId(id) {
-              val start = System.currentTimeMillis
-              bagAndTag(request, id, start) {
-                route
+    cors {
+      requestId {
+        case (request, id) =>
+          handleExceptions(exceptionHandler(request)) {
+            addRequestId(id) {
+              addResponseId(id) {
+                val start = System.currentTimeMillis
+                bagAndTag(request, id, start) {
+                  route
+                }
               }
             }
           }
-        }
+      }
     }
 
   private def exceptionHandler(req: HttpRequest): ExceptionHandler =
@@ -67,8 +68,6 @@ trait RequestResponseHandlingDirective extends PlayJsonSupport {
   private def addResponseId(id: IdHeader): Directive0 =
     mapResponseHeaders { headers =>
       id +:
-        RawHeader("Access-Control-Expose-Headers", "Content-Disposition") +:
-        RawHeader("Access-Control-Expose-Headers", "Authorization") +:
         headers
     }
 
