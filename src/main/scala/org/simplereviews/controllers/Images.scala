@@ -5,6 +5,7 @@ import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import org.byrde.commons.utils.auth.conf.JwtConfig
 import org.simplereviews.controllers.directives.AuthenticationDirectives
 import org.simplereviews.guice.Modules
+import org.simplereviews.logger.impl.ApplicationLogger
 import org.simplereviews.models.DefaultServiceResponse
 import org.simplereviews.models.exceptions.ServiceResponseException
 import org.simplereviews.utils.OptionUtils
@@ -29,6 +30,9 @@ import scala.util.{ Failure, Success }
 class Images(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirectives {
   private implicit val materializer: ActorMaterializer =
     modules.akka.materializer
+
+  val logger: ApplicationLogger =
+    modules.applicationLogger
 
   private val jwtConfig: JwtConfig =
     modules.configuration.jwtConfiguration

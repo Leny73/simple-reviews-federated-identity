@@ -10,6 +10,7 @@ import org.byrde.commons.utils.auth.conf.JwtConfig
 import org.simplereviews.controllers.directives.AuthenticationDirectives
 import org.simplereviews.controllers.requests.LoginRequest
 import org.simplereviews.guice.Modules
+import org.simplereviews.logger.impl.ApplicationLogger
 import org.simplereviews.models.DefaultServiceResponse
 import org.simplereviews.models.exceptions.ServiceResponseException
 
@@ -25,7 +26,10 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
 class Account(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirectives {
-  val jwtConfig: JwtConfig =
+  val logger: ApplicationLogger =
+    modules.applicationLogger
+
+  private val jwtConfig: JwtConfig =
     modules.configuration.jwtConfiguration
 
   lazy val routes: Route =

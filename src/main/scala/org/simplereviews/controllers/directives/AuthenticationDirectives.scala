@@ -6,16 +6,19 @@ import io.igl.jwt.{ Exp, Jwt, Sub }
 import org.byrde.commons.controllers.actions.auth.definitions.{ Admin, Org }
 import org.byrde.commons.utils.auth.JsonWebTokenWrapper
 import org.byrde.commons.utils.auth.conf.JwtConfig
+import org.simplereviews.logger.impl.ApplicationLogger
 import org.simplereviews.models.exceptions.ServiceResponseException
 
 import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.Directives.{ optionalHeaderValueByName, provide }
+import akka.http.scaladsl.server.Directives._
 
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
 import scala.util.matching.Regex
 
 trait AuthenticationDirectives extends PlayJsonSupport {
   type JWT = String
+
+  def logger: ApplicationLogger
 
   private val Bearer: Regex =
     "(^Bearer) (.+)".r
@@ -82,20 +85,24 @@ trait AuthenticationDirectives extends PlayJsonSupport {
   }
 
   def isAuthenticated(jwtConfig: JwtConfig): Directive1[Jwt] =
-    optionalHeaderValueByName(jwtConfig.tokenName)
-      .flatMap {
-        _.flatMap {
-          case Bearer(_, raw) =>
-            JsonWebTokenWrapper(jwtConfig).decode(raw).toOption match {
-              case Some(jwt) if !isTokenExpired(jwt) =>
-                Some(jwt)
-              case _ =>
-                Option.empty[Jwt]
-            }
-          case _ =>
-            Option.empty[Jwt]
-        }.fold(throw ServiceResponseException.E0401)(provide)
-      }
+    extractRequest flatMap { req =>
+      optionalHeaderValueByName(jwtConfig.tokenName)
+        .flatMap {
+          _.flatMap {
+            case Bearer(_, raw) =>
+              JsonWebTokenWrapper(jwtConfig).decode(raw) match {
+                case Success(jwt) if !isTokenExpired(jwt) =>
+                  Some(jwt)
+                case Failure(ex) =>
+                  logger.warn(s"Could not validate jwt: ${ex.getMessage}", req)
+                  Option.empty[Jwt]
+              }
+            case _ =>
+              logger.warn("No proper `Authorization` header found", req)
+              Option.empty[Jwt]
+          }.fold(throw ServiceResponseException.E0401)(provide)
+        }
+    }
 
   private def isTokenExpired(jwt: Jwt) =
     jwt.getClaim[Exp] match {
