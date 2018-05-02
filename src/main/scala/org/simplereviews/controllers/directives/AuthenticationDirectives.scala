@@ -94,7 +94,7 @@ trait AuthenticationDirectives extends PlayJsonSupport {
     remoteAddress.toOption.map(_.getHostAddress)
 
   private def isAuthenticated(jwtConfig: JwtConfig): Directive1[Jwt] =
-    extractRequestContext flatMap { req =>
+    extractRequest flatMap { req =>
       optionalHeaderValueByName(jwtConfig.tokenName)
         .flatMap {
           _.flatMap {
