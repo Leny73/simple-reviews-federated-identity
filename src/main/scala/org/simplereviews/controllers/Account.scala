@@ -52,7 +52,7 @@ class Account(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJ
   private def authenticated: Route =
     path("authenticated") {
       get {
-        isAuthenticatedWithSalt(jwtConfig) { _ =>
+        isAuthenticated(jwtConfig) { _ =>
           complete(StatusCodes.OK, Json.toJson(DefaultServiceResponse.success("Success")))
         }
       }
@@ -64,9 +64,7 @@ class Account(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJ
         val claims =
           Seq(Sub(user.id.toString), Org(user.organization.toString), Admin(user.isAdmin.toString))
 
-        JsonWebTokenWrapper(
-          jwtConfig.copy(saltOpt = salt(remoteAddress))
-        ).encode(claims)
+        JsonWebTokenWrapper(jwtConfig).encode(claims)
       }
     }
 }

@@ -8,9 +8,8 @@ import org.byrde.commons.utils.auth.JsonWebTokenWrapper
 import org.byrde.commons.utils.auth.conf.JwtConfig
 import org.simplereviews.models.exceptions.ServiceResponseException
 
-import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.Directives.{ extractClientIP, optionalHeaderValueByName, provide }
+import akka.http.scaladsl.server.Directives.{ optionalHeaderValueByName, provide }
 
 import scala.util.Try
 import scala.util.matching.Regex
@@ -20,11 +19,6 @@ trait AuthenticationDirectives extends PlayJsonSupport {
 
   private val Bearer: Regex =
     "(^Bearer) (.+)".r
-
-  def isAuthenticatedWithSalt(jwtConfig: JwtConfig): Directive1[Jwt] =
-    extractClientIP flatMap { ip =>
-      isAuthenticated(jwtConfig.copy(saltOpt = salt(ip)))
-    }
 
   def isAdmin(jwt: Jwt): Directive1[Jwt] = {
     val innerIsAdmin =
@@ -40,12 +34,12 @@ trait AuthenticationDirectives extends PlayJsonSupport {
   }
 
   def isAuthenticatedAndAdmin(jwtConfig: JwtConfig): Directive1[Jwt] =
-    isAuthenticatedWithSalt(jwtConfig) flatMap { jwt =>
+    isAuthenticated(jwtConfig) flatMap { jwt =>
       isAdmin(jwt)
     }
 
   def isAuthenticatedAndPartOfOrganization(org: Long, jwtConfig: JwtConfig): Directive1[Jwt] =
-    isAuthenticatedWithSalt(jwtConfig) flatMap { jwt =>
+    isAuthenticated(jwtConfig) flatMap { jwt =>
       isSameOrganization(org, jwt)
     }
 
@@ -55,7 +49,7 @@ trait AuthenticationDirectives extends PlayJsonSupport {
     }
 
   def isAuthenticatedAndPartOfOrganizationAndSameUser(org: Long, acc: Long, jwtConfig: JwtConfig): Directive1[Jwt] =
-    isAuthenticatedWithSalt(jwtConfig) flatMap { jwt =>
+    isAuthenticated(jwtConfig) flatMap { jwt =>
       isSameOrganization(org, jwt) flatMap { jwt =>
         isSameUser(acc, jwt)
       }
@@ -87,10 +81,7 @@ trait AuthenticationDirectives extends PlayJsonSupport {
     }
   }
 
-  def salt(remoteAddress: RemoteAddress): Option[String] =
-    remoteAddress.toOption.map(_.getHostAddress)
-
-  private def isAuthenticated(jwtConfig: JwtConfig): Directive1[Jwt] =
+  def isAuthenticated(jwtConfig: JwtConfig): Directive1[Jwt] =
     optionalHeaderValueByName(jwtConfig.tokenName)
       .flatMap {
         _.flatMap {
