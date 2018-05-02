@@ -7,6 +7,7 @@ import com.google.inject.Inject
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import org.byrde.commons.utils.auth.conf.JwtConfig
+import org.byrde.commons.utils.aws.conf.S3Config
 
 import akka.util.Timeout
 
@@ -26,6 +27,9 @@ class Configuration @Inject() () {
   lazy val name: String =
     underlyingAkkaConfiguration.getString("name")
 
+  lazy val env: String =
+    underlyingAkkaConfiguration.getString("env")
+
   lazy val interface: String =
     underlyingAkkaConfiguration.getString("interface")
 
@@ -33,15 +37,19 @@ class Configuration @Inject() () {
     underlyingAkkaConfiguration.getInt("port")
 
   lazy val timeout: Timeout =
-    Timeout(underlyingAkkaConfiguration.getInt("request-timeout") seconds)
+    Timeout(underlyingAkkaConfiguration.getInt("request-timeout").seconds)
 
   lazy val corsConfiguration: CORSConfiguration =
     CORSConfiguration(
-      underlyingAkkaConfiguration.getStringList("cors.origins").asScala,
-      underlyingAkkaConfiguration.getStringList("cors.headers").asScala)
+      underlyingAkkaConfiguration.getString("cors.origins").split(", "),
+      underlyingAkkaConfiguration.getString("cors.headers").split(", ")
+    )
 
   lazy val jwtConfiguration: JwtConfig =
     JwtConfig.apply(underlyingPlayConfig.get[play.api.Configuration]("jwt-config.client"))
+
+  lazy val imageBucket: String =
+    s"${env.toLowerCase}-${name.toLowerCase}-images"
 
   lazy val jdbcConfiguration: DatabaseConfig[JdbcProfile] =
     DatabaseConfig.forConfig("db")

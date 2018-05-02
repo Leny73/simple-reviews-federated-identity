@@ -3,9 +3,11 @@ package org.simplereviews.controllers
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import io.igl.jwt.Sub
 
+import org.byrde.commons.controllers.actions.auth.definitions.Admin
+import org.byrde.commons.controllers.actions.auth.definitions.Org
 import org.byrde.commons.utils.auth.JsonWebTokenWrapper
 import org.byrde.commons.utils.auth.conf.JwtConfig
-import org.simplereviews.controllers.directives.AuthenticationDirective
+import org.simplereviews.controllers.directives.AuthenticationDirectives
 import org.simplereviews.controllers.requests.LoginRequest
 import org.simplereviews.guice.Modules
 import org.simplereviews.models.DefaultServiceResponse
@@ -20,11 +22,9 @@ import akka.http.scaladsl.server.directives.{ HttpRequestWithEntity, Marshalling
 import akka.http.scaladsl.server.Route
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.Success
+import scala.util.{ Failure, Success }
 
-class Account(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirective {
-  type JWT = String
-
+class Account(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirectives {
   val jwtConfig: JwtConfig =
     modules.configuration.jwtConfiguration
 
@@ -35,14 +35,14 @@ class Account(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJ
     path("authenticate") {
       post {
         extractClientIP { ip =>
-          requestWithEntity(unmarshaller[LoginRequest]) { request =>
+          requestEntityUnmarshallerWithEntity(unmarshaller[LoginRequest]) { request =>
             onComplete(login(ip)(request)) {
               case Success(jwt) if jwt.nonEmpty =>
                 respondWithHeader(RawHeader(jwtConfig.tokenName, s"Bearer ${jwt.get}")) {
                   complete(StatusCodes.OK, Json.toJson(DefaultServiceResponse.success("Success")))
                 }
-              case _ =>
-                throw ServiceResponseException.E0401
+              case Failure(ex) =>
+                throw ServiceResponseException.E0401.copy(_msg = ex.getMessage)
             }
           }
         }
@@ -52,19 +52,17 @@ class Account(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJ
   private def authenticated: Route =
     path("authenticated") {
       get {
-        extractClientIP { ip =>
-          isAuthenticated(jwtConfig.copy(saltOpt = salt(ip))) { _ =>
-            complete(StatusCodes.OK, Json.toJson(DefaultServiceResponse.success("Success")))
-          }
+        isAuthenticatedWithSalt(jwtConfig) { _ =>
+          complete(StatusCodes.OK, Json.toJson(DefaultServiceResponse.success("Success")))
         }
       }
     }
 
   protected def login(remoteAddress: RemoteAddress)(implicit request: HttpRequestWithEntity[LoginRequest]): Future[Option[JWT]] =
-    modules.persistence.userDAO.findByUsernameAndPassword(request.body.username, request.body.password).map {
+    modules.persistence.userDAO.findByEmailAndPasswordAndOrganization(request.body.email, request.body.password, request.body.organization).map {
       _.map { user =>
         val claims =
-          Seq(Sub(user.id.toString))
+          Seq(Sub(user.id.toString), Org(user.organization.toString), Admin(user.isAdmin.toString))
 
         JsonWebTokenWrapper(
           jwtConfig.copy(saltOpt = salt(remoteAddress))

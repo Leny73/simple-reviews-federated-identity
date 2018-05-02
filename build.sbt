@@ -9,7 +9,7 @@ lazy val utils =
     "net.codingwell" %% "scala-guice" % "4.1.0",
     "io.igl" %% "jwt" % "1.2.0",
     "de.svenkubiak" % "jBCrypt" % "0.4.1",
-    "org.byrde" % "commons_2.11" % "1.0.77")
+    "org.byrde" % "commons_2.11" % "1.0.78")
 
 lazy val orm =
   Seq(
@@ -35,10 +35,13 @@ lazy val root =
           Resolver.bintrayRepo("hseeberger", "maven")),
       libraryDependencies ++=
         Seq(
-          "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
-          "com.typesafe.akka" %% "akka-http-xml"        % akkaHttpVersion,
-          "com.typesafe.akka" %% "akka-stream"          % akkaVersion,
-          "de.heikoseeberger" %% "akka-http-play-json"  % "1.17.0",
+          "com.typesafe.akka"  %% "akka-http"              % akkaHttpVersion,
+          "com.typesafe.akka"  %% "akka-http-xml"          % akkaHttpVersion,
+          "com.typesafe.akka"  %% "akka-http-caching"      % akkaHttpVersion,
+          "com.typesafe.akka"  %% "akka-stream"            % akkaVersion,
+          "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "0.18",
+          "de.heikoseeberger"  %% "akka-http-play-json"    % "1.17.0",
+          "ch.qos.logback"     % "logback-classic"         % "1.2.3",
 
           "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
           "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,

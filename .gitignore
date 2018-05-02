@@ -2,6 +2,9 @@ ignore
 *.class
 *.log
 
+# Configuration
+src/main/resources/application.conf
+
 # SBT specific
 .cache/
 .history/
