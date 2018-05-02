@@ -29,18 +29,16 @@ class OnStart @Inject() (modules: Modules) {
   private def start(): Future[User] = {
     modules.persistence.applySchema()
 
-    val organizationFuture =
-      modules.persistence.organizationDAO.findByName(ORGANIZATION).flatMap(_.fold {
-        modules.persistence.organizationDAO.upsert(Organization.create(ORGANIZATION))
-      }(Future.successful))
+    val organization =
+      Await.result(modules.persistence.organizationsDAO.findByName(ORGANIZATION).flatMap(_.fold {
+        modules.persistence.organizationsDAO.upsert(Organization.create(ORGANIZATION))
+      }(Future.successful)), 10.seconds)
 
-    organizationFuture.flatMap { organization =>
-      modules.persistence.userDAO.findByEmailAndPasswordAndOrganization(EMAIL, PASSWORD, organization.name).flatMap(_.fold {
-        modules.persistence.userDAO.upsert(User.create(organization, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, isVerified = true, isAdmin = true))
-      } { user =>
-        modules.persistence.userDAO.upsert(user.copy(organization = organization.id))
-      })
-    }
+    modules.persistence.usersDAO.findByEmailAndPasswordAndOrganization(EMAIL, PASSWORD, organization.name).flatMap(_.fold {
+      modules.persistence.usersDAO.upsert(User.create(organization.id, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, isVerified = true, isAdmin = true))
+    } { user =>
+      modules.persistence.usersDAO.upsert(user.copy(organizationId = organization.id))
+    })
   }
 
   Await.result(start(), 10.seconds)

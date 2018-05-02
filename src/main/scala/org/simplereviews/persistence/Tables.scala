@@ -4,7 +4,7 @@ import com.google.inject.Inject
 
 import org.byrde.commons.persistence.sql.slick.table.TablesA
 import org.simplereviews.guice.Modules
-import org.simplereviews.models.dto.{ Organization, User }
+import org.simplereviews.models.dto.{ Organization, OrganizationUser, User }
 
 class Tables @Inject() (modules: Modules) extends TablesA(modules.configuration.jdbcConfiguration) {
   import profile.api._
@@ -20,11 +20,11 @@ class Tables @Inject() (modules: Modules) extends TablesA(modules.configuration.
     val isVerified: Rep[Boolean] = column[Boolean]("is_verified")
     val isAdmin: Rep[Boolean] = column[Boolean]("is_admin")
 
-    lazy val organizationFk = foreignKey("fk_organization", organizationId, OrganizationTQ)(_.id)
+    lazy val organizationFk = foreignKey("fk_organization", organizationId, OrganizationsTQ)(_.id)
     lazy val idx = index("idx_email", email, unique = true)
   }
 
-  lazy val UserTQ = new TableQuery(new Users(_))
+  lazy val UsersTQ = new TableQuery(new Users(_))
 
   class Organizations(_tableTag: Tag) extends BaseTableA[Organization](_tableTag, "organizations") {
     def * = (id, name, google, facebook) <> ((Organization.apply _).tupled, Organization.unapply)
@@ -36,5 +36,18 @@ class Tables @Inject() (modules: Modules) extends TablesA(modules.configuration.
     lazy val idx = index("idx_name", name, unique = true)
   }
 
-  lazy val OrganizationTQ = new TableQuery(new Organizations(_))
+  lazy val OrganizationsTQ = new TableQuery(new Organizations(_))
+
+  class OrganizationUsers(_tableTag: Tag) extends BaseTableA[OrganizationUser](_tableTag, "organization_users") {
+    def * = (id, organizationId, userId) <> ((OrganizationUser.apply _).tupled, OrganizationUser.unapply)
+
+    val organizationId: Rep[Long] = column[Long]("organization_id")
+    val userId: Rep[Long] = column[Long]("user_id")
+
+    lazy val organizationFk = foreignKey("fk_organization_1", organizationId, OrganizationsTQ)(_.id, onDelete = ForeignKeyAction.Restrict)
+    lazy val userFk = foreignKey("fk_user_1", userId, UsersTQ)(_.id, onDelete = ForeignKeyAction.Cascade)
+    lazy val idx = index("idx_organization_id", organizationId, unique = false)
+  }
+
+  lazy val OrganizationUsersTQ = new TableQuery(new OrganizationUsers(_))
 }

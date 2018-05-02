@@ -1,7 +1,5 @@
 package org.simplereviews.controllers
 
-import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
-
 import org.byrde.commons.utils.auth.conf.JwtConfig
 import org.simplereviews.controllers.directives.AuthenticationDirectives
 import org.simplereviews.guice.Modules
@@ -27,7 +25,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-class Images(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirectives {
+class Images(val modules: Modules)(implicit ec: ExecutionContext) extends MarshallingEntityWithRequestDirective with AuthenticationDirectives {
   private implicit val materializer: ActorMaterializer =
     modules.akka.materializer
 
@@ -74,13 +72,13 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJs
   private def images: Route =
     pathPrefix("organization" / LongNumber) { org =>
       get {
-        isAuthenticatedAndPartOfOrganization(org, jwtConfig) { jwt =>
+        isAuthenticatedAndPartOfOrganization(org, jwtConfig) { _ =>
           cache(lfuCache, keyer) {
             download(buildOrganizationPath(org, filename))
           }
         }
       } ~ post {
-        isAuthenticatedAndAdminAndPartOfOrganization(org, jwtConfig) { jwt =>
+        isAuthenticatedAndAdminAndPartOfOrganization(org, jwtConfig) { _ =>
           fileUpload(filename) {
             case (metadata, byteSource) if metadata.contentType.mediaType == `image/png` || metadata.contentType.mediaType == `image/jpeg` =>
               upload(buildOrganizationPath(org, filename), byteSource, metadata.contentType)
@@ -90,13 +88,13 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJs
         }
       } ~ path("account" / LongNumber) { acc =>
         get {
-          isAuthenticatedAndPartOfOrganization(org, jwtConfig) { jwt =>
+          isAuthenticatedAndPartOfOrganization(org, jwtConfig) { _ =>
             cache(lfuCache, keyer) {
               download(buildAccountPath(org, acc, filename))
             }
           }
         } ~ post {
-          (isAuthenticatedAndPartOfOrganizationAndSameUser(acc, org, jwtConfig) | isAuthenticatedAndAdminAndPartOfOrganization(org, jwtConfig)) { jwt =>
+          isAuthenticatedAndPartOfOrganizationAndSameUser(acc, org, jwtConfig) { _ =>
             fileUpload(filename) {
               case (metadata, byteSource) if metadata.contentType.mediaType == `image/png` || metadata.contentType.mediaType == `image/jpeg` =>
                 upload(buildAccountPath(org, acc, filename), byteSource, metadata.contentType)
@@ -167,4 +165,12 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJs
         throw ServiceResponseException.E0404.copy(_msg = ex.getMessage)
     }
   }
+}
+
+object Images {
+  def buildOrganizationImagePath(org: Long): String =
+    s"/images/organization/$org"
+
+  def buildAccountImagePath(org: Long, acc: Long): String =
+    s"/images/organization/$org/account/$acc"
 }

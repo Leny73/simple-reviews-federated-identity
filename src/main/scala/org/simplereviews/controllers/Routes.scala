@@ -38,7 +38,8 @@ trait Routes extends PlayJsonSupport with RequestResponseHandlingDirective with 
     Map(
       "ping" -> defaultRoutes,
       "account" -> new Account(modules).routes,
-      "images" -> new Images(modules).routes
+      "images" -> new Images(modules).routes,
+      "organization" -> new Organization(modules).routes
     )
 
   lazy val routes: Route =

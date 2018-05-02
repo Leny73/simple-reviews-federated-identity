@@ -63,10 +63,10 @@ class Account(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJ
     }
 
   private def login(remoteAddress: RemoteAddress)(implicit request: HttpRequestWithEntity[LoginRequest]): Future[Option[JWT]] =
-    modules.persistence.userDAO.findByEmailAndPasswordAndOrganization(request.body.email, request.body.password, request.body.organization).map {
+    modules.persistence.usersDAO.findByEmailAndPasswordAndOrganization(request.body.email, request.body.password, request.body.organization).map {
       _.map { user =>
         val claims =
-          Seq(Sub(user.id.toString), Org(user.organization.toString), Admin(user.isAdmin.toString))
+          Seq(Sub(user.id.toString), Org(user.organizationId.toString), Admin(user.isAdmin.toString))
 
         JsonWebTokenWrapper(jwtConfig.copy(saltOpt = salt(remoteAddress))).encode(claims)
       }
