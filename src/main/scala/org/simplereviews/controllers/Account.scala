@@ -56,19 +56,19 @@ class Account(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJ
   private def authenticated: Route =
     path("authenticated") {
       get {
-        isAuthenticated(jwtConfig) { _ =>
+        isAuthenticatedWithSalt(jwtConfig) { _ =>
           complete(StatusCodes.OK, Json.toJson(DefaultServiceResponse.success("Success")))
         }
       }
     }
 
-  protected def login(remoteAddress: RemoteAddress)(implicit request: HttpRequestWithEntity[LoginRequest]): Future[Option[JWT]] =
+  private def login(remoteAddress: RemoteAddress)(implicit request: HttpRequestWithEntity[LoginRequest]): Future[Option[JWT]] =
     modules.persistence.userDAO.findByEmailAndPasswordAndOrganization(request.body.email, request.body.password, request.body.organization).map {
       _.map { user =>
         val claims =
           Seq(Sub(user.id.toString), Org(user.organization.toString), Admin(user.isAdmin.toString))
 
-        JsonWebTokenWrapper(jwtConfig).encode(claims)
+        JsonWebTokenWrapper(jwtConfig.copy(saltOpt = salt(remoteAddress))).encode(claims)
       }
     }
 }

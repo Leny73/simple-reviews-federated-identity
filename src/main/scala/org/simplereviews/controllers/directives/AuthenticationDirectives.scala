@@ -9,6 +9,7 @@ import org.byrde.commons.utils.auth.conf.JwtConfig
 import org.simplereviews.logger.impl.ApplicationLogger
 import org.simplereviews.models.exceptions.ServiceResponseException
 
+import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives._
 
@@ -22,6 +23,11 @@ trait AuthenticationDirectives extends PlayJsonSupport {
 
   private val Bearer: Regex =
     "(^Bearer) (.+)".r
+
+  def isAuthenticatedWithSalt(jwtConfig: JwtConfig): Directive1[Jwt] =
+    extractClientIP flatMap { ip =>
+      isAuthenticated(jwtConfig.copy(saltOpt = salt(ip)))
+    }
 
   def isAdmin(jwt: Jwt): Directive1[Jwt] = {
     val innerIsAdmin =
@@ -37,12 +43,12 @@ trait AuthenticationDirectives extends PlayJsonSupport {
   }
 
   def isAuthenticatedAndAdmin(jwtConfig: JwtConfig): Directive1[Jwt] =
-    isAuthenticated(jwtConfig) flatMap { jwt =>
+    isAuthenticatedWithSalt(jwtConfig) flatMap { jwt =>
       isAdmin(jwt)
     }
 
   def isAuthenticatedAndPartOfOrganization(org: Long, jwtConfig: JwtConfig): Directive1[Jwt] =
-    isAuthenticated(jwtConfig) flatMap { jwt =>
+    isAuthenticatedWithSalt(jwtConfig) flatMap { jwt =>
       isSameOrganization(org, jwt)
     }
 
@@ -52,7 +58,7 @@ trait AuthenticationDirectives extends PlayJsonSupport {
     }
 
   def isAuthenticatedAndPartOfOrganizationAndSameUser(org: Long, acc: Long, jwtConfig: JwtConfig): Directive1[Jwt] =
-    isAuthenticated(jwtConfig) flatMap { jwt =>
+    isAuthenticatedWithSalt(jwtConfig) flatMap { jwt =>
       isSameOrganization(org, jwt) flatMap { jwt =>
         isSameUser(acc, jwt)
       }
@@ -84,8 +90,11 @@ trait AuthenticationDirectives extends PlayJsonSupport {
     }
   }
 
-  def isAuthenticated(jwtConfig: JwtConfig): Directive1[Jwt] =
-    extractRequest flatMap { req =>
+  def salt(remoteAddress: RemoteAddress): Option[String] =
+    remoteAddress.toOption.map(_.getHostAddress)
+
+  private def isAuthenticated(jwtConfig: JwtConfig): Directive1[Jwt] =
+    extractRequestContext flatMap { req =>
       optionalHeaderValueByName(jwtConfig.tokenName)
         .flatMap {
           _.flatMap {
