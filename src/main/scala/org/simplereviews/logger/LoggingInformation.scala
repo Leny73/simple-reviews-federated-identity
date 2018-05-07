@@ -1,7 +1,7 @@
 package org.simplereviews.logger
 
+import org.byrde.commons.utils.OptionUtils._
 import org.simplereviews.services.ServiceRequestResponse
-import org.simplereviews.utils.OptionUtils._
 
 import play.api.libs.json.{ JsObject, JsString, Json }
 

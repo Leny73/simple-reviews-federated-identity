@@ -4,10 +4,11 @@ import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 import io.igl.jwt.{ Exp, Jwt, Sub }
 
 import org.byrde.commons.controllers.actions.auth.definitions.{ Admin, Org }
+import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
 import org.byrde.commons.utils.auth.JsonWebTokenWrapper
 import org.byrde.commons.utils.auth.conf.JwtConfig
+import org.simplereviews.guice.Modules
 import org.simplereviews.logger.impl.ApplicationLogger
-import org.simplereviews.models.exceptions.ServiceResponseException
 
 import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.server.Directive1
@@ -19,9 +20,12 @@ import scala.util.matching.Regex
 trait AuthenticationDirectives extends PlayJsonSupport {
   type JWT = String
 
-  def logger: ApplicationLogger
+  def modules: Modules
 
-  private val Bearer: Regex =
+  val logger: ApplicationLogger =
+    modules.applicationLogger
+
+  val Bearer: Regex =
     "(^Bearer) (.+)".r
 
   def isAuthenticatedWithSalt(jwtConfig: JwtConfig): Directive1[Jwt] =
@@ -38,13 +42,18 @@ trait AuthenticationDirectives extends PlayJsonSupport {
     if (innerIsAdmin) {
       provide(jwt)
     } else {
-      throw ServiceResponseException.E0403
+      throw E0403
     }
   }
 
   def isAuthenticatedAndAdmin(jwtConfig: JwtConfig): Directive1[Jwt] =
     isAuthenticatedWithSalt(jwtConfig) flatMap { jwt =>
       isAdmin(jwt)
+    }
+
+  def isAuthenticatedAndSameUser(user: Long, jwtConfig: JwtConfig): Directive1[Jwt] =
+    isAuthenticatedWithSalt(jwtConfig) flatMap { jwt =>
+      isSameUser(user, jwt)
     }
 
   def isAuthenticatedAndPartOfOrganization(org: Long, jwtConfig: JwtConfig): Directive1[Jwt] =
@@ -57,10 +66,10 @@ trait AuthenticationDirectives extends PlayJsonSupport {
       isSameOrganization(org, jwt)
     }
 
-  def isAuthenticatedAndPartOfOrganizationAndSameUser(org: Long, acc: Long, jwtConfig: JwtConfig): Directive1[Jwt] =
+  def isAuthenticatedAndPartOfOrganizationAndSameUser(org: Long, user: Long, jwtConfig: JwtConfig): Directive1[Jwt] =
     isAuthenticatedWithSalt(jwtConfig) flatMap { jwt =>
       isSameOrganization(org, jwt) flatMap { jwt =>
-        isSameUser(acc, jwt)
+        isSameUser(user, jwt)
       }
     }
 
@@ -73,24 +82,24 @@ trait AuthenticationDirectives extends PlayJsonSupport {
     if (isSameOrganization) {
       provide(jwt)
     } else {
-      throw ServiceResponseException.E0403
+      throw E0403
     }
   }
 
-  def isSameUser(acc: Long, jwt: Jwt): Directive1[Jwt] = {
+  def isSameUser(user: Long, jwt: Jwt): Directive1[Jwt] = {
     val isSameUser =
       jwt.getClaim[Sub].fold(false) { x =>
-        Try(x.value.toLong).toOption.fold(false)(_ == acc)
+        Try(x.value.toLong).toOption.fold(false)(_ == user)
       }
 
     if (isSameUser) {
       provide(jwt)
     } else {
-      throw ServiceResponseException.E0403
+      throw E0403
     }
   }
 
-  def salt(remoteAddress: RemoteAddress): Option[String] =
+  protected def salt(remoteAddress: RemoteAddress): Option[String] =
     remoteAddress.toOption.map(_.getHostAddress)
 
   private def isAuthenticated(jwtConfig: JwtConfig): Directive1[Jwt] =
@@ -109,7 +118,7 @@ trait AuthenticationDirectives extends PlayJsonSupport {
             case _ =>
               logger.warn("No proper `Authorization` header found", req)
               Option.empty[Jwt]
-          }.fold(throw ServiceResponseException.E0401)(provide)
+          }.fold(throw E0401)(provide)
         }
     }
 

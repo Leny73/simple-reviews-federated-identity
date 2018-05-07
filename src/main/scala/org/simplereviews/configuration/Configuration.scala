@@ -7,11 +7,11 @@ import com.google.inject.Inject
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import org.byrde.commons.utils.auth.conf.JwtConfig
-import org.byrde.commons.utils.aws.conf.S3Config
+import org.byrde.commons.utils.email.conf.EmailConfig
 
+import akka.stream.alpakka.s3.S3Settings
 import akka.util.Timeout
 
-import collection.JavaConverters._
 import scala.concurrent.duration._
 
 class Configuration @Inject() () {
@@ -48,9 +48,15 @@ class Configuration @Inject() () {
   lazy val jwtConfiguration: JwtConfig =
     JwtConfig.apply(underlyingPlayConfig.get[play.api.Configuration]("jwt-config.client"))
 
-  lazy val imageBucket: String =
-    s"${env.toLowerCase}-${name.toLowerCase}-images"
-
   lazy val jdbcConfiguration: DatabaseConfig[JdbcProfile] =
     DatabaseConfig.forConfig("db")
+
+  lazy val s3Configuration: S3Settings =
+    S3Settings(underlyingConfig)
+
+  lazy val emailConfiguration: EmailConfig =
+    EmailConfig(underlyingPlayConfig.get[play.api.Configuration]("services.email"))
+
+  lazy val imageBucket: String =
+    s"${env.toLowerCase}-${name.toLowerCase}-images"
 }

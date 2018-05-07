@@ -2,71 +2,54 @@ package org.simplereviews.controllers
 
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 
-import org.byrde.commons.utils.auth.conf.JwtConfig
-import org.simplereviews.controllers.directives.AuthenticationDirectives
-import org.simplereviews.controllers.requests.UserRequest
+import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
+import org.simplereviews.controllers.directives.{ AccountSupport, ApiSupport, AuthenticationDirectives }
+import org.simplereviews.controllers.requests.CreateUserRequest
 import org.simplereviews.guice.Modules
-import org.simplereviews.logger.impl.ApplicationLogger
-import org.simplereviews.models.dto.User
-import org.simplereviews.models.exceptions.ServiceResponseException
-
-import play.api.libs.json.Json
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.MarshallingEntityWithRequestDirective
 
 import scala.concurrent.ExecutionContext
-import scala.util.{ Failure, Success }
 
-class Organization(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJsonSupport with MarshallingEntityWithRequestDirective with AuthenticationDirectives {
-  val logger: ApplicationLogger =
-    modules.applicationLogger
-
-  private val jwtConfig: JwtConfig =
-    modules.configuration.jwtConfiguration
-
+class Organization(val modules: Modules)(implicit val ec: ExecutionContext) extends PlayJsonSupport with ApiSupport with AccountSupport with MarshallingEntityWithRequestDirective with AuthenticationDirectives {
   lazy val routes: Route =
     organization
 
   private def organization: Route =
-    pathPrefix(LongNumber) { org =>
-      isAuthenticatedAndAdminAndPartOfOrganization(org, jwtConfig) { _ =>
+    pathPrefix(LongNumber) { organizationId =>
+      isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
         path("users") {
           get {
-            listUsers(org)
+            listUsers(organizationId)
           }
         } ~ pathPrefix("user") {
           post {
-            requestEntityUnmarshallerWithEntity(unmarshaller[UserRequest]) { request =>
-              createUser(org, request.body)
+            requestEntityUnmarshallerWithEntity(unmarshaller[CreateUserRequest]) { request =>
+              createUser(organizationId, request.body)
+            }
+          } ~ path(LongNumber) { userId =>
+            delete {
+              deleteUser(userId)
             }
           }
         }
       }
     }
 
-  private def listUsers(org: Long): Route =
-    onComplete(modules.persistence.organizationUsersDAO.findByOrganization(org)) {
-      case Success(users) =>
-        complete(Json.toJson(users))
-      case Failure(ex) =>
-        throw ServiceResponseException.E0404.copy(_msg = ex.getMessage)
-    }
+  private def listUsers(organizationId: Long): Route =
+    asyncJson({
+      modules.persistence.organizationUsersDAO.findByOrganization(organizationId)
+    }, Err = E0404.apply)
 
-  private def createUser(org: Long, userRequest: UserRequest): Route =
-    onComplete({
-      val (user, password) =
-        User.create(org, userRequest)
+  private def createUser(organizationId: Long, createUserRequest: CreateUserRequest): Route =
+    asyncWithDefaultResponse({
+      createAccount(organizationId, createUserRequest)
+    }, E0200)
 
-      modules.persistence.usersDAO.upsert(user).map { user =>
-        //TODO: Email new password.
-        user
-      }
-    }) {
-      case Success(user) =>
-        complete(Json.toJson(user))
-      case Failure(ex) =>
-        throw ServiceResponseException.E0400.copy(_msg = ex.getMessage)
-    }
+  private def deleteUser(userId: Long): Route =
+    asyncWithDefaultResponse({
+      modules.persistence.usersDAO.deleteById(userId)
+    }, E0200)
 }

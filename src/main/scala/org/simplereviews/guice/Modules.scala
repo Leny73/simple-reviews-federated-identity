@@ -2,12 +2,11 @@ package org.simplereviews.guice
 
 import com.google.inject.Inject
 
+import org.byrde.commons.services.email.EmailServiceWrapper
 import org.simplereviews.configuration.Configuration
 import org.simplereviews.logger.impl.{ ApplicationLogger, ErrorLogger, RequestLogger }
 import org.simplereviews.persistence.{ Persistence, Tables }
-
-import akka.stream.alpakka.s3.S3Settings
-import akka.stream.alpakka.s3.scaladsl.S3Client
+import org.simplereviews.services.aws.S3ServiceWrapper
 
 class Modules @Inject() (
     val configuration: Configuration,
@@ -19,8 +18,11 @@ class Modules @Inject() (
   lazy val tables: Tables =
     new Tables(this)
 
-  lazy val s3Client: S3Client =
-    new S3Client(S3Settings(configuration.underlyingConfig))(akka.system, akka.materializer)
+  lazy val s3ServiceWrapper: S3ServiceWrapper =
+    new S3ServiceWrapper(this)(akka.materializer, akka.system)
+
+  lazy val emailService: EmailServiceWrapper =
+    EmailServiceWrapper(configuration.emailConfiguration)
 
   lazy val applicationLogger: ApplicationLogger =
     new ApplicationLogger(this)

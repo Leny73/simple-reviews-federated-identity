@@ -1,12 +1,11 @@
 package org.simplereviews.controllers
 
+import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
 import org.byrde.commons.utils.auth.conf.JwtConfig
-import org.simplereviews.controllers.directives.AuthenticationDirectives
+import org.byrde.commons.utils.FutureUtils._
+import org.simplereviews.controllers.directives.{ ApiSupport, AuthenticationDirectives }
 import org.simplereviews.guice.Modules
 import org.simplereviews.logger.impl.ApplicationLogger
-import org.simplereviews.models.DefaultServiceResponse
-import org.simplereviews.models.exceptions.ServiceResponseException
-import org.simplereviews.utils.OptionUtils
 
 import akka.http.scaladsl.server.directives.CachingDirectives._
 import akka.http.caching.scaladsl.{ Cache, CachingSettings, LfuCacheSettings }
@@ -17,43 +16,36 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.MarshallingEntityWithRequestDirective
 import akka.http.scaladsl.server.{ RequestContext, Route, RouteResult }
 import akka.stream.ActorMaterializer
-import akka.stream.alpakka.s3.impl.S3Headers
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
 
-class Images(val modules: Modules)(implicit ec: ExecutionContext) extends MarshallingEntityWithRequestDirective with AuthenticationDirectives {
-  private implicit val materializer: ActorMaterializer =
+class Images(val modules: Modules)(implicit ec: ExecutionContext) extends ApiSupport with MarshallingEntityWithRequestDirective with AuthenticationDirectives {
+  implicit val materializer: ActorMaterializer =
     modules.akka.materializer
 
-  val logger: ApplicationLogger =
-    modules.applicationLogger
-
-  private val jwtConfig: JwtConfig =
+  val jwtConfig: JwtConfig =
     modules.configuration.jwtConfiguration
 
-  private val imageBucket: String =
+  val imageBucket: String =
     modules.configuration.imageBucket
 
-  private val defaultCachingSettings: CachingSettings =
+  val defaultCachingSettings: CachingSettings =
     CachingSettings(modules.akka.system)
 
-  private val lfuCacheSettings: LfuCacheSettings =
+  val lfuCacheSettings: LfuCacheSettings =
     defaultCachingSettings.lfuCacheSettings
       .withInitialCapacity(100)
       .withMaxCapacity(1000)
       .withTimeToIdle(60.seconds)
 
-  private val cachingSettings: CachingSettings =
+  val cachingSettings: CachingSettings =
     defaultCachingSettings.withLfuCacheSettings(lfuCacheSettings)
 
-  private val lfuCache: Cache[Uri, RouteResult] =
+  val lfuCache: Cache[Uri, RouteResult] =
     LfuCache(cachingSettings)
 
-  private val keyer: PartialFunction[RequestContext, Uri] = {
+  val keyer: PartialFunction[RequestContext, Uri] = {
     val isGet: RequestContext => Boolean =
       _.request.method == HttpMethods.GET
 
@@ -63,114 +55,66 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends Marsha
     }
   }
 
-  private val filename: String =
+  val filename: String =
     "image"
 
   lazy val routes: Route =
-    images
-
-  private def images: Route =
-    pathPrefix("organization" / LongNumber) { org =>
+    pathPrefix("org" / LongNumber) { organizationId =>
       get {
-        isAuthenticatedAndPartOfOrganization(org, jwtConfig) { _ =>
+        isAuthenticatedAndPartOfOrganization(organizationId, jwtConfig) { _ =>
           cache(lfuCache, keyer) {
-            download(buildOrganizationPath(org, filename))
+            downloadImage(imageBucket, Images.buildOrganizationS3Key(organizationId, filename))
           }
         }
       } ~ post {
-        isAuthenticatedAndAdminAndPartOfOrganization(org, jwtConfig) { _ =>
-          fileUpload(filename) {
-            case (metadata, byteSource) if metadata.contentType.mediaType == `image/png` || metadata.contentType.mediaType == `image/jpeg` =>
-              upload(buildOrganizationPath(org, filename), byteSource, metadata.contentType)
-            case _ =>
-              throw ServiceResponseException.E0404.copy(_msg = "Unsupported file type")
-          }
+        isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
+          uploadImage(filename, imageBucket, Images.buildOrganizationS3Key(organizationId, filename))
         }
-      } ~ path("account" / LongNumber) { acc =>
+      } ~ path("user" / LongNumber) { userId =>
         get {
-          isAuthenticatedAndPartOfOrganization(org, jwtConfig) { _ =>
+          isAuthenticatedAndPartOfOrganization(organizationId, jwtConfig) { _ =>
             cache(lfuCache, keyer) {
-              download(buildAccountPath(org, acc, filename))
+              downloadImage(imageBucket, Images.buildUserS3Key(organizationId, userId, filename))
             }
           }
         } ~ post {
-          isAuthenticatedAndPartOfOrganizationAndSameUser(acc, org, jwtConfig) { _ =>
-            fileUpload(filename) {
-              case (metadata, byteSource) if metadata.contentType.mediaType == `image/png` || metadata.contentType.mediaType == `image/jpeg` =>
-                upload(buildAccountPath(org, acc, filename), byteSource, metadata.contentType)
-              case _ =>
-                throw ServiceResponseException.E0404.copy(_msg = "Unsupported file type")
-            }
+          isAuthenticatedAndPartOfOrganizationAndSameUser(organizationId, userId, jwtConfig) { _ =>
+            uploadImage(filename, imageBucket, Images.buildUserS3Key(organizationId, userId, filename))
           }
         }
       }
     }
 
-  private def buildOrganizationPath(org: Long, file: String): String =
-    s"$org/$file"
-
-  private def buildAccountPath(org: Long, acc: Long, file: String): String =
-    s"$org/$acc/$file"
-
-  def download(key: String): Route =
-    onComplete(modules.s3Client.download(imageBucket, key) match {
-      case (source, metaFuture) =>
-        metaFuture.map {
-          case meta if meta.contentLength > 0 =>
-            val contentType =
-              meta
-                .contentType
-                .flatMap {
-                  ContentType
-                    .parse(_)
-                    .fold(_ => Option.empty[ContentType], OptionUtils.Any2Some(_).?)
-                }.getOrElse(ContentType.apply(`application/octet-stream`))
-
-            HttpResponse(
-              entity = HttpEntity(
-                contentType,
-                meta.contentLength,
-                source
-              )
-            )
-          case _ =>
-            throw ServiceResponseException.E0404
-        }
-    }) {
-      case Success(response) =>
-        complete(response)
-      case Failure(ex) =>
-        throw ServiceResponseException.E0404.copy(_msg = ex.getMessage)
-    }
-
-  private def upload(key: String, data: Source[ByteString, _], contentType: ContentType): Route = {
-    val contentLengthFuture =
-      data.runFold(0L) {
-        case (acc, byte) =>
-          acc + byte.length
+  def downloadImage(bucket: String, key: String): Route =
+    async[UniversalEntity]({
+      FutureTry2FutureConversion {
+        modules.s3ServiceWrapper.download(bucket, key).map(_.map(_.toUniversalEntity))
       }
+    }, entity => complete(HttpResponse(entity = entity)), E0404.apply)
 
-    onComplete(contentLengthFuture.flatMap { contentLength =>
-      if (contentLength > 0) {
-        modules.s3Client.putObject(imageBucket, key, data, contentLength, contentType, S3Headers(Nil)).map { _ =>
-          DefaultServiceResponse.success("Success")
+  def uploadImage(filename: String, bucket: String, key: String): Route =
+    fileUpload(filename) {
+      case (metadata, _) if !(metadata.contentType.mediaType == `image/png`) && !(metadata.contentType.mediaType == `image/jpeg`) =>
+        complete(E0400("Unsupported file type"))
+      case (metadata, byteSource) =>
+        asyncJson {
+          modules.s3ServiceWrapper.upload(imageBucket, key, byteSource, metadata.contentType).flattenTry
         }
-      } else {
-        throw ServiceResponseException.E0400.copy(_msg = "Empty file")
-      }
-    }) {
-      case Success(response) =>
-        complete(response)
-      case Failure(ex) =>
-        throw ServiceResponseException.E0404.copy(_msg = ex.getMessage)
+      case _ =>
+        complete(E0404("Invalid request"))
     }
-  }
 }
 
 object Images {
-  def buildOrganizationImagePath(org: Long): String =
-    s"/images/organization/$org"
+  def buildOrganizationImagePath(organizationId: Long): String =
+    s"/images/organization/$organizationId"
 
-  def buildAccountImagePath(org: Long, acc: Long): String =
-    s"/images/organization/$org/account/$acc"
+  def buildUserImagePath(organizationId: Long, userId: Long): String =
+    s"/images/organization/$organizationId/account/$userId"
+
+  def buildOrganizationS3Key(org: Long, file: String): String =
+    s"$org/$file"
+
+  def buildUserS3Key(org: Long, acc: Long, file: String): String =
+    s"$org/$acc/$file"
 }

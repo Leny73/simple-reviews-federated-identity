@@ -2,9 +2,9 @@ package org.simplereviews.controllers
 
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 
-import org.simplereviews.controllers.directives.{ RequestResponseHandlingDirective, RejectionHandlerDirective }
+import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
+import org.simplereviews.controllers.directives.{ RejectionHandlerDirective, RequestResponseHandlingDirective }
 import org.simplereviews.guice.Modules
-import org.simplereviews.models.DefaultServiceResponse
 
 import play.api.libs.json.Json
 
@@ -31,18 +31,20 @@ trait Routes extends PlayJsonSupport with RequestResponseHandlingDirective with 
 
   lazy val defaultRoutes: Route =
     get {
-      complete(OK -> Json.toJson(DefaultServiceResponse.success("Pong!")))
+      complete(OK -> Json.toJson(E0200("Pong!")))
     }
 
   lazy val pathBindings =
     Map(
       "ping" -> defaultRoutes,
-      "account" -> new Account(modules).routes,
+      "auth" -> new Authentication(modules).routes,
       "images" -> new Images(modules).routes,
-      "organization" -> new Organization(modules).routes
+      "org" -> new Organization(modules).routes,
+      "user" -> new User(modules).routes
     )
 
   lazy val routes: Route =
+    //TODO: Inject Modules on individual requests
     requestResponseHandler {
       pathBindings.map {
         case (k, v) => pathPrefix(k)(v)

@@ -19,7 +19,7 @@ class ServiceLogger(modules: Modules) extends Logger {
     service: NameForLogging,
     serviceRequest: HttpRequestWithEntity[T],
     originalRequest: HttpRequestWithEntity[_]
-  )(fn: HttpRequestWithEntity[T] => Future[HttpResponse])(implicit materializer: Materializer, executionContext: ExecutionContext, loggingInformation: LoggingInformation[ServiceRequestResponse[T]]): Future[HttpResponse] = {
+  )(fn: HttpRequestWithEntity[T] => Future[HttpResponse])(implicit materializer: Materializer, ec: ExecutionContext, loggingInformation: LoggingInformation[ServiceRequestResponse[T]]): Future[HttpResponse] = {
     val start: Long = System.currentTimeMillis()
 
     fn(serviceRequest).map { serviceResponse =>

@@ -17,7 +17,7 @@ class FacebookService(modules: Modules) extends BaseHttpService {
 
   override implicit protected def materializer: ActorMaterializer = ???
 
-  override implicit protected def executionContext: ExecutionContext = ???
+  override implicit protected def ec: ExecutionContext = ???
 
   override protected val http: HttpExt = ???
 

@@ -10,14 +10,13 @@ class Tables @Inject() (modules: Modules) extends TablesA(modules.configuration.
   import profile.api._
 
   class Users(_tableTag: Tag) extends BaseTableA[User](_tableTag, "users") {
-    def * = (id, organizationId, email, password, firstName, lastName, isVerified, isAdmin) <> ((User.apply _).tupled, User.unapply)
+    def * = (id, organizationId, email, password, firstName, lastName, isAdmin) <> ((User.apply _).tupled, User.unapply)
 
     val organizationId: Rep[Long] = column[Long]("organization_id")
     val email: Rep[String] = column[String]("email", O.Length(255, varying = true), O.Unique)
     val password: Rep[String] = column[String]("password", O.Length(255, varying = true))
     val firstName: Rep[String] = column[String]("first_name", O.Length(255, varying = true))
     val lastName: Rep[String] = column[String]("last_name", O.Length(255, varying = true))
-    val isVerified: Rep[Boolean] = column[Boolean]("is_verified")
     val isAdmin: Rep[Boolean] = column[Boolean]("is_admin")
 
     lazy val organizationFk = foreignKey("fk_organization", organizationId, OrganizationsTQ)(_.id)

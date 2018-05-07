@@ -17,7 +17,7 @@ trait BaseHttpService extends NameForLogging {
 
   implicit protected def materializer: ActorMaterializer
 
-  implicit protected def executionContext: ExecutionContext
+  implicit protected def ec: ExecutionContext
 
   protected val http: HttpExt
 

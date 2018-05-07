@@ -1,10 +1,11 @@
 package org.simplereviews.controllers.directives
 
 import java.util.UUID
+
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 
+import org.byrde.commons.utils.exception.ServiceResponseException
 import org.simplereviews.logger.impl.{ ErrorLogger, RequestLogger }
-import org.simplereviews.models.exceptions.ServiceResponseException
 
 import play.api.libs.json.Json
 
@@ -36,12 +37,12 @@ trait RequestResponseHandlingDirective extends PlayJsonSupport with RejectionHan
 
   private def exceptionHandler(req: HttpRequest): ExceptionHandler =
     ExceptionHandler {
-      case exception: Exception =>
+      case exception: Throwable =>
         val serviceResponseException =
           exception match {
             case serviceResponseException: ServiceResponseException =>
               serviceResponseException
-            case ex: Exception =>
+            case ex: Throwable =>
               ServiceResponseException(ex)
           }
 

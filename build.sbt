@@ -9,7 +9,7 @@ lazy val utils =
     "net.codingwell" %% "scala-guice" % "4.1.0",
     "io.igl" %% "jwt" % "1.2.0",
     "de.svenkubiak" % "jBCrypt" % "0.4.1",
-    "org.byrde" % "commons_2.11" % "1.0.78")
+    "org.byrde" % "commons_2.11" % "1.0.95")
 
 lazy val orm =
   Seq(
