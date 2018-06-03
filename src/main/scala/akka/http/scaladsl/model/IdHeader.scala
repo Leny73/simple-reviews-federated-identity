@@ -7,8 +7,10 @@ import scala.util.{ Success, Try }
 final case class IdHeader(id: String) extends ModeledCustomHeader[IdHeader] {
   override val renderInRequests =
     false
+
   override val renderInResponses =
     true
+
   override val companion: IdHeader.type =
     IdHeader
 

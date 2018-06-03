@@ -33,6 +33,13 @@ class Persistence(modules: Modules) {
           }(Future.successful)
         }
 
+      def findByOrganization(org: Long): Future[Seq[User]] =
+        db.run((for {
+          (_, users) <- OrganizationUsersTQ filter (_.organizationId === org) join UsersTQ on (_.userId === _.id)
+        } yield {
+          users
+        }).result)
+
       def findByIdAndPassword(userId: Long, password: String): Future[Option[User]] =
         findById(userId) map { users =>
           users.filter(user => BCrypt.checkpw(password, user.password))
@@ -44,7 +51,9 @@ class Persistence(modules: Modules) {
         } yield {
           user -> organization
         }).result).map { result =>
-          result.headOption.map(_._1)
+          result
+            .headOption
+            .map(_._1)
         }
 
       def findByEmailAndPasswordAndOrganization(email: String, password: String, organization: String): Future[Option[User]] =
@@ -98,13 +107,6 @@ class Persistence(modules: Modules) {
 
   lazy val organizationUsersDAO =
     new BaseDAONoStreamA[tables.OrganizationUsers, OrganizationUser](OrganizationUsersTQ) {
-      def findByOrganization(org: Long): Future[Seq[User]] =
-        db.run((for {
-          (_, users) <- OrganizationUsersTQ filter (_.organizationId === org) join UsersTQ on (_.userId === _.id)
-        } yield {
-          users
-        }).result)
-
       def findByOrganizationAndUser(org: Long, user: Long): Future[Option[OrganizationUser]] =
         findByFilter { row =>
           row.organizationId === org && row.userId === user

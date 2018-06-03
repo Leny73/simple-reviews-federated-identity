@@ -28,7 +28,7 @@ lazy val root =
         version         := "1.0",
         scalaVersion    := "2.11.11"
       )),
-      name := "simple-reviews",
+      name := "simple-reviews-organization",
       resolvers ++=
         Seq(
           "byrdelibraries" at "https://dl.cloudsmith.io/public/byrde/libraries/maven/",

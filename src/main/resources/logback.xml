@@ -71,7 +71,7 @@
         <appender-ref ref="APPLICATION-APPENDER"/>
     </logger>
 
-    <logger name="scala.slick.jdbc.JdbcBackend.statement" level="DEBUG">
+    <logger name="scala.slick.jdbc.JdbcBackend.statement" level="OFF">
         <appender-ref ref="STDOUT" />
     </logger>
 

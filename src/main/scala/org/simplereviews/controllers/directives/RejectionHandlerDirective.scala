@@ -7,7 +7,8 @@ import akka.http.scaladsl.server.{ MethodRejection, RejectionHandler }
 
 trait RejectionHandlerDirective extends CORSDirective {
   implicit val handler: RejectionHandler =
-    RejectionHandler.newBuilder()
+    RejectionHandler
+      .newBuilder()
       .handleAll[MethodRejection] { rejections =>
         lazy val methods = rejections.map(_.supported)
         lazy val names = methods.map(_.name).mkString(", ")

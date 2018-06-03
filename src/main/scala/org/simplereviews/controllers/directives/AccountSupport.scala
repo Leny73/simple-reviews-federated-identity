@@ -33,7 +33,8 @@ trait AccountSupport extends AuthenticationDirectives {
         signInRequest.email,
         signInRequest.password,
         signInRequest.organization
-      ).map {
+      )
+      .map {
         case Some(user) =>
           val claims =
             Seq(Sub(user.id.toString), Org(user.organizationId.toString), Admin(user.isAdmin.toString))
@@ -49,7 +50,8 @@ trait AccountSupport extends AuthenticationDirectives {
       .findByEmailAndAndOrganization(
         forgotPasswordRequest.email,
         forgotPasswordRequest.organization
-      ).flatMap {
+      )
+      .flatMap {
         case Some(user) =>
           val password =
             User.generatePassword

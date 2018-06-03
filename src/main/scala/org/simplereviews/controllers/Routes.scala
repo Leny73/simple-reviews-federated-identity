@@ -1,9 +1,7 @@
 package org.simplereviews.controllers
 
-import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
-
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
-import org.simplereviews.controllers.directives.{ RejectionHandlerDirective, RequestResponseHandlingDirective }
+import org.simplereviews.controllers.directives.RequestResponseHandlingDirective
 import org.simplereviews.guice.Modules
 
 import play.api.libs.json.Json
@@ -17,7 +15,7 @@ import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext
 
-trait Routes extends PlayJsonSupport with RequestResponseHandlingDirective with MarshallingEntityWithRequestDirective with RejectionHandlerDirective {
+trait Routes extends MarshallingEntityWithRequestDirective with RequestResponseHandlingDirective {
   def modules: Modules
 
   implicit val timeout: Timeout =

@@ -40,7 +40,7 @@ class Organization(val modules: Modules)(implicit val ec: ExecutionContext) exte
 
   private def listUsers(organizationId: Long): Route =
     asyncJson({
-      modules.persistence.organizationUsersDAO.findByOrganization(organizationId)
+      modules.persistence.usersDAO.findByOrganization(organizationId)
     }, Err = E0404.apply)
 
   private def createUser(organizationId: Long, createUserRequest: CreateUserRequest): Route =

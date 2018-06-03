@@ -21,7 +21,7 @@ import scala.util.Try
 
 class S3ServiceWrapper(modules: Modules)(implicit materializer: Materializer, actorSystem: ActorSystem) {
   implicit protected val ec: ExecutionContext =
-    modules.akka.system.dispatchers.lookup("services.aws.s3.dispatcher")
+    modules.akka.system.dispatchers.lookup("akka.stream.alpakka.s3.dispatcher")
 
   lazy val s3Client: S3Client =
     new S3Client(modules.configuration.s3Configuration)
@@ -40,7 +40,8 @@ class S3ServiceWrapper(modules: Modules)(implicit materializer: Materializer, ac
                   ContentType
                     .parse(_)
                     .fold(_ => Option.empty[ContentType], _.?)
-                }.getOrElse(ContentType.apply(`application/octet-stream`))
+                }
+                .getOrElse(ContentType.apply(`application/octet-stream`))
 
             S3ServiceResponse(contentType, meta.contentLength, source).!+
         }
@@ -57,9 +58,9 @@ class S3ServiceWrapper(modules: Modules)(implicit materializer: Materializer, ac
       case contentLength if contentLength <= 0 =>
         Future.failed(new Exception("Cannot upload empty file"))
       case contentLength =>
-        s3Client.putObject(bucket, key, data, contentLength, contentType, S3Headers(Nil)).map { _ =>
-          Ack.!+
-        }
+        s3Client
+          .putObject(bucket, key, data, contentLength, contentType, S3Headers(Nil))
+          .map(_ => Ack.!+)
     }
   }
 }
