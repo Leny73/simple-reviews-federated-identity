@@ -1,4 +1,4 @@
-# SimpleReviews Server
+# SimpleReviews Organization Micro-Service
 
 This is a starter application that gives you everything you need to start building an AkkaHttp application.
 
