@@ -110,7 +110,7 @@ object Images {
     s"/images/organization/$organizationId"
 
   def buildUserImagePath(organizationId: Long, userId: Long): String =
-    s"/images/organization/$organizationId/account/$userId"
+    s"/images/organization/$organizationId/user/$userId"
 
   def buildOrganizationS3Key(org: Long, file: String): String =
     s"$org/$file"
