@@ -33,7 +33,7 @@ class OnStart @Inject() (modules: Modules) {
     modules.persistence.organizationsDAO.findByName(ORGANIZATION).flatMap(_.fold {
       modules.persistence.organizationsDAO.insert(Organization.create(ORGANIZATION))
     }(Future.successful)).flatMap { organization =>
-      modules.persistence.usersDAO.findByEmailAndPasswordAndOrganization(EMAIL, PASSWORD, organization.name).flatMap { userOpt =>
+      modules.persistence.usersDAO.findByEmailAndAndOrganization(EMAIL, organization.name).flatMap { userOpt =>
         userOpt.fold {
           modules.persistence.usersDAO.insertAndInsertOrganizationUserRow(User.create(organization.id, EMAIL, PASSWORD, FIRSTNAME, LASTNAME, isAdmin = true))
         }(Future.successful)

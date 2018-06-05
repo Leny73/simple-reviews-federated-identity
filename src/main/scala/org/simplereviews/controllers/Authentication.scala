@@ -46,7 +46,7 @@ class Authentication(val modules: Modules)(implicit val ec: ExecutionContext) ex
     path("signed-in") {
       get {
         isAuthenticatedWithSalt(jwtConfig) { _ =>
-          complete(StatusCodes.OK, Json.toJson(E0200))
+          complete(E0200)
         }
       }
     }
