@@ -29,7 +29,9 @@ class Organization(val modules: Modules)(implicit val ec: ExecutionContext) exte
         post {
           isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
             requestEntityUnmarshallerWithEntity(unmarshaller[CreateUserRequest]) { request =>
-              createUser(organizationId, request.body)
+              asyncWithDefaultResponse({
+                createUser(organizationId, request.body)
+              }, E0200)
             }
           }
         } ~ path(LongNumber) { userId =>
@@ -46,11 +48,6 @@ class Organization(val modules: Modules)(implicit val ec: ExecutionContext) exte
     asyncJson({
       modules.persistence.usersDAO.findByOrganization(organizationId)
     }, Err = E0404.apply)
-
-  private def createUser(organizationId: Long, createUserRequest: CreateUserRequest): Route =
-    asyncWithDefaultResponse({
-      createUser(organizationId, createUserRequest)
-    }, E0200)
 
   private def deleteUser(userId: Long): Route =
     asyncWithDefaultResponse({
