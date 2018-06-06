@@ -44,14 +44,12 @@ class User(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJson
 
   private def getUser(userId: Long): Route =
     asyncJson {
-      FutureTry2FutureConversion {
-        modules.persistence.usersDAO.findById(userId).map {
-          case Some(user) =>
-            user.!+
-          case None =>
-            E0404(s"User $userId does not exist").!-
-        }
-      }
+      modules.persistence.usersDAO.findById(userId).map {
+        case Some(user) =>
+          user.!+
+        case None =>
+          E0404(s"User $userId does not exist").!-
+      }.flattenTry
     }
 
   private def changePassword(userId: Long, password: ChangePasswordRequest): Route =
@@ -60,19 +58,17 @@ class User(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJson
         case Some(_) if password.newPassword != password.verifyNewPassword =>
           Future.failed(E0400("New password doesn't match password verification"))
         case Some(_) =>
-          FutureTry2FutureConversion {
-            modules.persistence.usersDAO.findByIdAndPassword(userId, password.currentPassword).flatMap {
-              case None =>
-                Future.failed(E0400("Invalid password"))
-              case Some(_) =>
-                modules.persistence.usersDAO.updatePassword(userId, password.newPassword) map {
-                  case Some(user) =>
-                    user.!+
-                  case None =>
-                    E0404(s"User $userId does not exist").!-
-                }
-            }
-          }
+          modules.persistence.usersDAO.findByIdAndPassword(userId, password.currentPassword).flatMap {
+            case None =>
+              Future.failed(E0400("Invalid password"))
+            case Some(_) =>
+              modules.persistence.usersDAO.updatePassword(userId, password.newPassword) map {
+                case Some(user) =>
+                  user.!+
+                case None =>
+                  E0404(s"User $userId does not exist").!-
+              }
+          }.flattenTry
         case _ =>
           Future.failed(E0400("Wrong password"))
       }
@@ -80,13 +76,11 @@ class User(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJson
 
   private def updateUser(userId: Long, updateUserRequest: UpdateUserRequest): Route =
     asyncJson {
-      FutureTry2FutureConversion {
-        modules.persistence.usersDAO.updateWithUpdateUserRequest(userId, updateUserRequest) map {
-          case Some(user) =>
-            user.!+
-          case None =>
-            E0404(s"User $userId does not exist").!-
-        }
-      }
+      modules.persistence.usersDAO.updateWithUpdateUserRequest(userId, updateUserRequest).map {
+        case Some(user) =>
+          user.!+
+        case None =>
+          E0404(s"User $userId does not exist").!-
+      }.flattenTry
     }
 }

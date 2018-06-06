@@ -12,7 +12,7 @@ import akka.http.scaladsl.model.ContentType
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.impl.S3Headers
-import akka.stream.alpakka.s3.scaladsl.S3Client
+import akka.stream.alpakka.s3.scaladsl.{ ObjectMetadata, S3Client }
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
@@ -34,20 +34,13 @@ class S3ServiceWrapper(modules: Modules)(implicit materializer: Materializer, ac
             new Exception(s"Could not find S3 object for key: $key, in bucket: $bucket").!-
           case meta =>
             val contentType =
-              meta
-                .contentType
-                .flatMap {
-                  ContentType
-                    .parse(_)
-                    .fold(_ => Option.empty[ContentType], _.?)
-                }
-                .getOrElse(ContentType.apply(`application/octet-stream`))
+              getContentType(meta)
 
             S3ServiceResponse(contentType, meta.contentLength, source).!+
         }
     }
 
-  def upload(bucket: String, key: String, data: Source[ByteString, _], contentType: ContentType): Future[Try[Ack]] = {
+  def upload(bucket: String, key: String, data: Source[ByteString, _], contentType: ContentType): Future[Try[S3ServiceResponse]] = {
     val contentLengthFuture =
       data.runFold(0L) {
         case (acc, byte) =>
@@ -60,7 +53,19 @@ class S3ServiceWrapper(modules: Modules)(implicit materializer: Materializer, ac
       case contentLength =>
         s3Client
           .putObject(bucket, key, data, contentLength, contentType, S3Headers(Nil))
-          .map(_ => Ack.!+)
+          .map { _ =>
+            S3ServiceResponse(contentType, contentLength, data).!+
+          }
     }
   }
+
+  private def getContentType: ObjectMetadata => ContentType = meta =>
+    meta
+      .contentType
+      .flatMap {
+        ContentType
+          .parse(_)
+          .fold(_ => Option.empty[ContentType], _.?)
+      }
+      .getOrElse(ContentType.apply(`application/octet-stream`))
 }

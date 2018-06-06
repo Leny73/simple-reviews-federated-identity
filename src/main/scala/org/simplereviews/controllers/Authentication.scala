@@ -29,9 +29,7 @@ class Authentication(val modules: Modules)(implicit val ec: ExecutionContext) ex
         extractClientIP { ip =>
           requestEntityUnmarshallerWithEntity(unmarshaller[SignInRequest]) { request =>
             async[JWT]({
-              FutureTry2FutureConversion {
-                authenticate(ip, request.body)
-              }
+              authenticate(ip, request.body).flattenTry
             }, jwt => {
               respondWithHeader(RawHeader(jwtConfig.tokenName, s"Bearer $jwt")) {
                 complete(E0200)
@@ -56,9 +54,7 @@ class Authentication(val modules: Modules)(implicit val ec: ExecutionContext) ex
       post {
         requestEntityUnmarshallerWithEntity(unmarshaller[ForgotPasswordRequest]) { request =>
           asyncJson {
-            FutureTry2FutureConversion {
-              resetPassword(request.body)
-            }
+            resetPassword(request.body).flattenTry
           }
         }
       }

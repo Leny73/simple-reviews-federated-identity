@@ -5,7 +5,6 @@ import org.byrde.commons.utils.auth.conf.JwtConfig
 import org.byrde.commons.utils.FutureUtils._
 import org.simplereviews.controllers.directives.{ ApiSupport, AuthenticationDirectives }
 import org.simplereviews.guice.Modules
-import org.simplereviews.logger.impl.ApplicationLogger
 
 import akka.http.scaladsl.server.directives.CachingDirectives._
 import akka.http.caching.scaladsl.{ Cache, CachingSettings, LfuCacheSettings }
@@ -87,9 +86,7 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends ApiSup
 
   def downloadImage(bucket: String, key: String): Route =
     async[UniversalEntity]({
-      FutureTry2FutureConversion {
-        modules.s3ServiceWrapper.download(bucket, key).map(_.map(_.toUniversalEntity))
-      }
+      modules.s3ServiceWrapper.download(bucket, key).flattenTry.map(_.toUniversalEntity)
     }, entity => complete(HttpResponse(entity = entity)), E0404.apply)
 
   def uploadImage(filename: String, bucket: String, key: String): Route =
@@ -97,9 +94,9 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends ApiSup
       case (metadata, _) if !(metadata.contentType.mediaType == `image/png`) && !(metadata.contentType.mediaType == `image/jpeg`) =>
         complete(E0400("Unsupported file type"))
       case (metadata, byteSource) =>
-        asyncJson {
-          modules.s3ServiceWrapper.upload(imageBucket, key, byteSource, metadata.contentType).flattenTry
-        }
+        async[UniversalEntity]({
+          modules.s3ServiceWrapper.upload(imageBucket, key, byteSource, metadata.contentType).flattenTry.map(_.toUniversalEntity)
+        }, entity => complete(HttpResponse(entity = entity)))
       case _ =>
         complete(E0404("Invalid request"))
     }
