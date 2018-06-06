@@ -40,7 +40,7 @@ trait AccountSupport extends AuthenticationDirectives {
             Seq(Sub(user.id.toString), Org(user.organizationId.toString), Admin(user.isAdmin.toString))
           JsonWebTokenWrapper(jwtConfig.copy(saltOpt = salt(remoteAddress))).encode(claims).!+
         case None =>
-          E0400("Invalid username and password").!-
+          E0400("Invalid organization, username, and password").!-
       }
 
   def resetPassword(forgotPasswordRequest: ForgotPasswordRequest): Future[Try[Ack]] =
@@ -71,7 +71,7 @@ trait AccountSupport extends AuthenticationDirectives {
           Future.failed(E0400("User does not exist"))
       }
 
-  def createAccount(organizationId: Long, createUserRequest: CreateUserRequest): Future[Try[User]] =
+  def createUser(organizationId: Long, createUserRequest: CreateUserRequest): Future[Try[User]] =
     modules
       .persistence
       .organizationsDAO

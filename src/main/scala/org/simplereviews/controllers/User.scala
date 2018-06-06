@@ -23,16 +23,18 @@ class User(val modules: Modules)(implicit ec: ExecutionContext) extends PlayJson
 
   lazy val routes: Route =
     pathPrefix(LongNumber) { userId =>
-      isAuthenticatedAndSameUser(userId, jwtConfig) { _ =>
-        path("change-password") {
-          put {
+      path("change-password") {
+        put {
+          isAuthenticatedAndSameUser(userId, jwtConfig) { _ =>
             requestEntityUnmarshallerWithEntity(unmarshaller[ChangePasswordRequest]) { request =>
               changePassword(userId, request.body)
             }
           }
-        } ~ get {
-          getUser(userId)
-        } ~ put {
+        }
+      } ~ get {
+        getUser(userId)
+      } ~ put {
+        isAuthenticatedAndSameUser(userId, jwtConfig) { _ =>
           requestEntityUnmarshallerWithEntity(unmarshaller[UpdateUserRequest]) { request =>
             updateUser(userId, request.body)
           }

@@ -19,18 +19,22 @@ class Organization(val modules: Modules)(implicit val ec: ExecutionContext) exte
 
   private def organization: Route =
     pathPrefix(LongNumber) { organizationId =>
-      isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
-        path("users") {
-          get {
+      path("users") {
+        get {
+          isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
             listUsers(organizationId)
           }
-        } ~ pathPrefix("user") {
-          post {
+        }
+      } ~ pathPrefix("user") {
+        post {
+          isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
             requestEntityUnmarshallerWithEntity(unmarshaller[CreateUserRequest]) { request =>
               createUser(organizationId, request.body)
             }
-          } ~ path(LongNumber) { userId =>
-            delete {
+          }
+        } ~ path(LongNumber) { userId =>
+          delete {
+            isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
               deleteUser(userId)
             }
           }
@@ -45,7 +49,7 @@ class Organization(val modules: Modules)(implicit val ec: ExecutionContext) exte
 
   private def createUser(organizationId: Long, createUserRequest: CreateUserRequest): Route =
     asyncWithDefaultResponse({
-      createAccount(organizationId, createUserRequest)
+      createUser(organizationId, createUserRequest)
     }, E0200)
 
   private def deleteUser(userId: Long): Route =
