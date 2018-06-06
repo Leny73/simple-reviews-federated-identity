@@ -107,10 +107,10 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends ApiSup
 
 object Images {
   def buildOrganizationImagePath(organizationId: Long): String =
-    s"/images/organization/$organizationId"
+    s"/images/org/$organizationId"
 
   def buildUserImagePath(organizationId: Long, userId: Long): String =
-    s"/images/organization/$organizationId/user/$userId"
+    s"/images/org/$organizationId/user/$userId"
 
   def buildOrganizationS3Key(org: Long, file: String): String =
     s"$org/$file"

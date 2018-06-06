@@ -36,7 +36,7 @@ object User {
           "firstName" -> o.firstName,
           "lastName" -> o.lastName,
           "organizationImage" -> Images.buildOrganizationImagePath(o.organizationId),
-          "accountImage" -> Images.buildUserImagePath(o.organizationId, o.id),
+          "userImage" -> Images.buildUserImagePath(o.organizationId, o.id),
           "isAdmin" -> o.isAdmin
         )
     }
