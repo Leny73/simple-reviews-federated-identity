@@ -52,6 +52,9 @@ class S3ServiceWrapper(modules: Modules)(implicit materializer: Materializer, ac
           Future.failed(new Exception("Cannot upload empty file"))
         case x =>
           s3Client
+            //If both consumers used the same stream it would get flushed before the second consumer could get to it.
+            //Have to materialize the data once and then re-source the data for the upload & response because
+            //there is too much time between the first and second consumer.
             .putObject(bucket, key, materializedData.toSource, x, contentType, S3Headers(Nil))
             .map { _ =>
               S3ServiceResponse(contentType, contentLength, materializedData.toSource).!+
