@@ -65,7 +65,7 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends ApiSup
             downloadImage(imageBucket, Images.buildOrganizationS3Key(organizationId, filename))
           }
         }
-      } ~ post {
+      } ~ put {
         isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
           uploadImage(filename, imageBucket, Images.buildOrganizationS3Key(organizationId, filename))
         }
@@ -76,7 +76,7 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends ApiSup
               downloadImage(imageBucket, Images.buildUserS3Key(organizationId, userId, filename))
             }
           }
-        } ~ post {
+        } ~ put {
           isAuthenticatedAndPartOfOrganizationAndSameUser(organizationId, userId, jwtConfig) { _ =>
             uploadImage(filename, imageBucket, Images.buildUserS3Key(organizationId, userId, filename))
           }
