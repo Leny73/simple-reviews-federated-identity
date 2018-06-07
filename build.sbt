@@ -9,7 +9,7 @@ lazy val utils =
     "net.codingwell" %% "scala-guice" % "4.1.0",
     "io.igl" %% "jwt" % "1.2.0",
     "de.svenkubiak" % "jBCrypt" % "0.4.1",
-    "org.byrde" % "commons_2.11" % "1.0.95")
+    "org.byrde" % "commons_2.11" % "1.0.96")
 
 lazy val orm =
   Seq(
@@ -47,5 +47,3 @@ lazy val root =
           "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
           "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
           "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test) ++ utils ++ orm ++ postgresql :+ jsonParsingLibrary).enablePlugins(JavaAppPackaging)
-
-Revolver.settings

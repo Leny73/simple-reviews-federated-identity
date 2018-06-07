@@ -2,18 +2,17 @@ package org.simplereviews.services.aws
 
 import org.byrde.commons.utils.OptionUtils._
 import org.byrde.commons.utils.TryUtils._
+import org.byrde.commons.utils.AkkaStreamsUtils._
 import org.simplereviews.guice.Modules
-import org.simplereviews.models.services.responses.Ack
 import org.simplereviews.models.services.responses.aws.S3ServiceResponse
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`application/octet-stream`
 import akka.http.scaladsl.model.ContentType
 import akka.stream.Materializer
-import akka.stream.alpakka.s3.S3Settings
 import akka.stream.alpakka.s3.impl.S3Headers
 import akka.stream.alpakka.s3.scaladsl.{ ObjectMetadata, S3Client }
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -41,21 +40,23 @@ class S3ServiceWrapper(modules: Modules)(implicit materializer: Materializer, ac
     }
 
   def upload(bucket: String, key: String, data: Source[ByteString, _], contentType: ContentType): Future[Try[S3ServiceResponse]] = {
-    val contentLengthFuture =
-      data.runFold(0L) {
-        case (acc, byte) =>
-          acc + byte.length
-      }
+    data.runWith(Sink.seq).flatMap { materializedData =>
+      val contentLength =
+        materializedData.foldLeft(0L) {
+          case (acc, byte) =>
+            acc + byte.length
+        }
 
-    contentLengthFuture.flatMap {
-      case contentLength if contentLength <= 0 =>
-        Future.failed(new Exception("Cannot upload empty file"))
-      case contentLength =>
-        s3Client
-          .putObject(bucket, key, data, contentLength, contentType, S3Headers(Nil))
-          .map { _ =>
-            S3ServiceResponse(contentType, contentLength, data).!+
-          }
+      contentLength match {
+        case x if x <= 0 =>
+          Future.failed(new Exception("Cannot upload empty file"))
+        case x =>
+          s3Client
+            .putObject(bucket, key, materializedData.toSource, x, contentType, S3Headers(Nil))
+            .map { _ =>
+              S3ServiceResponse(contentType, contentLength, materializedData.toSource).!+
+            }
+      }
     }
   }
 

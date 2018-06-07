@@ -14,6 +14,11 @@ trait CORSDirective {
       RawHeader("Access-Control-Allow-Origin", _)
     }
 
+  val allowedMethods: Seq[RawHeader] =
+    corsConfiguration.methods.map {
+      RawHeader("Access-Control-Allow-Methods", _)
+    }
+
   val allowHeaders: Seq[RawHeader] =
     corsConfiguration.headers.map {
       RawHeader("Access-Control-Allow-Headers", _)
@@ -25,7 +30,10 @@ trait CORSDirective {
     }
 
   def cors(route: Route): Route =
-    respondWithHeaders(origins ++ allowHeaders ++ exposeHeaders: _*) {
-      route
-    }
+    respondWithHeaders(
+      origins ++
+        allowedMethods ++
+        allowHeaders ++
+        exposeHeaders: _*
+    )(route)
 }

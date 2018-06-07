@@ -39,9 +39,16 @@ class Configuration @Inject() () {
   lazy val timeout: Timeout =
     Timeout(underlyingAkkaConfiguration.getInt("request-timeout").seconds)
 
+  lazy val uploadConfiguration: UploadConfiguration =
+    UploadConfiguration(
+      underlyingAkkaConfiguration.getLong("upload.duration").seconds,
+      underlyingAkkaConfiguration.getLong("upload.max-content-length")
+    )
+
   lazy val corsConfiguration: CORSConfiguration =
     CORSConfiguration(
       underlyingAkkaConfiguration.getString("cors.origins").split(", "),
+      underlyingAkkaConfiguration.getString("cors.methods").split(", "),
       underlyingAkkaConfiguration.getString("cors.headers").split(", ")
     )
 
