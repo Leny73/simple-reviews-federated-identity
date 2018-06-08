@@ -8,6 +8,7 @@ import org.simplereviews.logger.impl.{ ApplicationLogger, ErrorLogger, RequestLo
 import org.simplereviews.persistence.{ Persistence, Tables }
 import org.simplereviews.services.aws.S3ServiceWrapper
 
+@Singleton
 class Modules @Inject() (
     val configuration: Configuration,
     val akka: Akka

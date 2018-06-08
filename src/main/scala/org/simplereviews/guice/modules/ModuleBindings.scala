@@ -11,7 +11,7 @@ class ModuleBindings extends AbstractModule with ScalaModule {
   override def configure(): Unit = {
     bind[Configuration]
     bind[Akka]
-    bind[Modules]
+    bind[Modules].asEagerSingleton()
     bind[OnStart].asEagerSingleton()
   }
 }
