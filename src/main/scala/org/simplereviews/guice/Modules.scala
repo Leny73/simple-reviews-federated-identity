@@ -1,11 +1,11 @@
 package org.simplereviews.guice
 
-import com.google.inject.{Inject, Singleton}
+import com.google.inject.{ Inject, Singleton }
 
 import org.byrde.commons.services.email.EmailServiceWrapper
 import org.simplereviews.configuration.Configuration
-import org.simplereviews.logger.impl.{ApplicationLogger, ErrorLogger, RequestLogger}
-import org.simplereviews.persistence.{Persistence, Tables}
+import org.simplereviews.logger.impl.{ ApplicationLogger, ErrorLogger, RequestLogger }
+import org.simplereviews.persistence.{ Persistence, Tables }
 import org.simplereviews.services.aws.S3ServiceWrapper
 
 @Singleton

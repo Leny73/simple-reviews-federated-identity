@@ -110,8 +110,8 @@ object Images {
     s"/images/org/$organizationId/user/$userId"
 
   def buildOrganizationS3Key(org: Long, file: String): String =
-    s"$org/$file"
+    s"$org/$file-org"
 
   def buildUserS3Key(org: Long, acc: Long, file: String): String =
-    s"$org/$acc/$file"
+    s"$org/$file-$acc"
 }
