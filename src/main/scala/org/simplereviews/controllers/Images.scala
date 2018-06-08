@@ -59,17 +59,7 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends ApiSup
 
   lazy val routes: Route =
     pathPrefix("org" / LongNumber) { organizationId =>
-      get {
-        isAuthenticatedAndPartOfOrganization(organizationId, jwtConfig) { _ =>
-          cache(lfuCache, keyer) {
-            downloadImage(imageBucket, Images.buildOrganizationS3Key(organizationId, filename))
-          }
-        }
-      } ~ put {
-        isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
-          uploadImage(filename, imageBucket, Images.buildOrganizationS3Key(organizationId, filename))
-        }
-      } ~ path("user" / LongNumber) { userId =>
+      path("user" / LongNumber) { userId =>
         get {
           isAuthenticatedAndPartOfOrganization(organizationId, jwtConfig) { _ =>
             cache(lfuCache, keyer) {
@@ -80,6 +70,16 @@ class Images(val modules: Modules)(implicit ec: ExecutionContext) extends ApiSup
           isAuthenticatedAndPartOfOrganizationAndSameUser(organizationId, userId, jwtConfig) { _ =>
             uploadImage(filename, imageBucket, Images.buildUserS3Key(organizationId, userId, filename))
           }
+        }
+      } ~ get {
+        isAuthenticatedAndPartOfOrganization(organizationId, jwtConfig) { _ =>
+          cache(lfuCache, keyer) {
+            downloadImage(imageBucket, Images.buildOrganizationS3Key(organizationId, filename))
+          }
+        }
+      } ~ put {
+        isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
+          uploadImage(filename, imageBucket, Images.buildOrganizationS3Key(organizationId, filename))
         }
       }
     }
@@ -110,8 +110,8 @@ object Images {
     s"/images/org/$organizationId/user/$userId"
 
   def buildOrganizationS3Key(org: Long, file: String): String =
-    s"$org/$file-org"
+    s"$org/$file"
 
   def buildUserS3Key(org: Long, acc: Long, file: String): String =
-    s"$org/$file-$acc"
+    s"$org/$acc/$file"
 }
