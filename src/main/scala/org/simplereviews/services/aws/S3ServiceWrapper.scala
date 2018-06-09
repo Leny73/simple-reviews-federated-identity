@@ -11,16 +11,16 @@ import akka.http.scaladsl.model.MediaTypes.`application/octet-stream`
 import akka.http.scaladsl.model.ContentType
 import akka.stream.Materializer
 import akka.stream.alpakka.s3.impl.S3Headers
-import akka.stream.alpakka.s3.scaladsl.{ ObjectMetadata, S3Client }
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.alpakka.s3.scaladsl.{ObjectMetadata, S3Client}
+import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.Try
 
 class S3ServiceWrapper(modules: Modules)(implicit materializer: Materializer, actorSystem: ActorSystem) {
-  implicit protected val ec: ExecutionContext =
-    modules.akka.system.dispatchers.lookup("akka.stream.alpakka.s3.dispatcher")
+  implicit val ec: ExecutionContextExecutor =
+    materializer.executionContext
 
   lazy val s3Client: S3Client =
     new S3Client(modules.configuration.s3Configuration)

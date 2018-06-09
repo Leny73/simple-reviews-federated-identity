@@ -39,7 +39,7 @@ lazy val root =
           "com.typesafe.akka"  %% "akka-http-xml"          % akkaHttpVersion,
           "com.typesafe.akka"  %% "akka-http-caching"      % akkaHttpVersion,
           "com.typesafe.akka"  %% "akka-stream"            % akkaVersion,
-          "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "0.18",
+          "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "0.19",
           "de.heikoseeberger"  %% "akka-http-play-json"    % "1.17.0",
           "ch.qos.logback"     % "logback-classic"         % "1.2.3",
 
