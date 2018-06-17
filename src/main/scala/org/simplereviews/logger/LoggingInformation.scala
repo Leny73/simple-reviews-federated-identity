@@ -1,7 +1,6 @@
 package org.simplereviews.logger
 
 import org.byrde.commons.utils.OptionUtils._
-import org.simplereviews.services.ServiceRequestResponse
 
 import play.api.libs.json.{ JsObject, JsString, Json }
 
@@ -61,13 +60,13 @@ object LoggingInformation {
         )
     }
 
-  implicit val exceptionWithHttpRequest: LoggingInformation[(Exception, HttpRequest)] =
-    new LoggingInformation[(Exception, HttpRequest)] {
-      override def log(elem: (Exception, HttpRequest)): JsObject = {
+  implicit val exceptionWithHttpRequest: LoggingInformation[(Throwable, HttpRequest)] =
+    new LoggingInformation[(Throwable, HttpRequest)] {
+      override def log(elem: (Throwable, HttpRequest)): JsObject = {
         val (ex, req) =
           elem._1 -> elem._2
 
-        def serializeException(ex: Exception): JsObject = {
+        def serializeException(ex: Throwable): JsObject = {
           def loop(throwable: Throwable): JsObject = {
             val causedBy =
               Option(throwable) match {
@@ -95,17 +94,5 @@ object LoggingInformation {
           "exception" -> serializeException(ex)
         )
       }
-    }
-
-  implicit def serviceRequestResponse[T]: LoggingInformation[ServiceRequestResponse[T]] =
-    new LoggingInformation[ServiceRequestResponse[T]] {
-      override def log(elem: ServiceRequestResponse[T]): JsObject =
-        Json.obj(
-          "service" -> elem.service.nameForLoggingString,
-          "epoch" -> s"${elem.epoch}ms",
-          "request" -> httpRequestWithEntity(elem.originalRequest),
-          "serviceRequest" -> httpRequestWithEntity(elem.request),
-          "serviceResponse" -> httpResponseInformation(elem.response)
-        )
     }
 }

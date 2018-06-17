@@ -1,17 +1,16 @@
 package org.simplereviews.logger.impl
 
-import org.simplereviews.guice.Modules
+import com.google.inject.Inject
+
+import org.simplereviews.guice.Akka
 import org.simplereviews.logger.{ Logger, LoggingInformation }
 
 import akka.event.{ Logging, LoggingAdapter }
 
-class ErrorLogger(modules: Modules) extends Logger {
+class ErrorLogger @Inject() (akka: Akka) extends Logger {
   override protected val logger: LoggingAdapter =
-    Logging(modules.akka.system, getClass)
+    Logging(akka.system, getClass)
 
-  def error[T](throwable: Throwable, elem: T)(implicit loggingInformation: LoggingInformation[(Exception, T)]): Unit =
-    error(new Exception(throwable), elem)
-
-  def error[T](exception: Exception, elem: T)(implicit loggingInformation: LoggingInformation[(Exception, T)]): Unit =
-    logger.error(loggingInformation.log(exception.getMessage, exception -> elem).toString)
+  def error[T](throwable: Throwable, elem: T)(implicit loggingInformation: LoggingInformation[(Throwable, T)]): Unit =
+    logger.error(loggingInformation.log(throwable.getMessage, throwable -> elem).toString)
 }

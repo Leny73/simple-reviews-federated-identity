@@ -2,7 +2,7 @@ package org.simplereviews.controllers
 
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
 import org.simplereviews.controllers.directives.RequestResponseHandlingDirective
-import org.simplereviews.guice.Modules
+import org.simplereviews.guice.ModulesProvider
 
 import play.api.libs.json.Json
 
@@ -15,17 +15,14 @@ import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext
 
-trait Routes extends MarshallingEntityWithRequestDirective with RequestResponseHandlingDirective {
-  def modules: Modules
+trait Routes extends RequestResponseHandlingDirective with MarshallingEntityWithRequestDirective {
+  def modulesProvider: ModulesProvider
 
-  implicit val timeout: Timeout =
-    modules.configuration.timeout
+  implicit def ec: ExecutionContext
 
-  implicit val system: ActorSystem =
-    modules.akka.system
+  implicit def system: ActorSystem
 
-  implicit val ec: ExecutionContext =
-    system.dispatcher
+  implicit def timeout: Timeout
 
   lazy val defaultRoutes: Route =
     get {
@@ -35,14 +32,12 @@ trait Routes extends MarshallingEntityWithRequestDirective with RequestResponseH
   lazy val pathBindings =
     Map(
       "ping" -> defaultRoutes,
-      "auth" -> new Authentication(modules).routes,
-      "images" -> new Images(modules).routes,
-      "org" -> new Organization(modules).routes,
-      "user" -> new User(modules).routes
+      "auth" -> new Authentication(modulesProvider).routes,
+      "org" -> new Organization(modulesProvider).routes,
+      "user" -> new User(modulesProvider).routes
     )
 
   lazy val routes: Route =
-    //TODO: Inject Modules on individual requests
     requestResponseHandler {
       pathBindings.map {
         case (k, v) => pathPrefix(k)(v)

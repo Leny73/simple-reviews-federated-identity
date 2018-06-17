@@ -35,8 +35,9 @@ object User {
           "email" -> o.email,
           "firstName" -> o.firstName,
           "lastName" -> o.lastName,
-          "organizationImage" -> Images.buildOrganizationImagePath(o.organizationId),
-          "userImage" -> Images.buildUserImagePath(o.organizationId, o.id),
+          //TODO: Update image path
+          //"organizationImage" -> Images.buildOrganizationImagePath(o.organizationId),
+          //"userImage" -> Images.buildUserImagePath(o.organizationId, o.id),
           "isAdmin" -> o.isAdmin
         )
     }

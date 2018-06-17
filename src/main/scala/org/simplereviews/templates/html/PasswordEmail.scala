@@ -2,6 +2,7 @@ package org.simplereviews.templates.html
 
 import play.twirl.api.Html
 
+//TODO: Mirgate to SimpleReviews API
 class PasswordEmail(name: String, organization: String, email: String, password: String) {
   lazy val render: Html =
     Html(

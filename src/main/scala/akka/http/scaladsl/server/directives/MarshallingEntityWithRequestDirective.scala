@@ -15,7 +15,7 @@ trait MarshallingEntityWithRequestDirective {
 
       onComplete(um(ctx.request.entity).map(_ -> ctx.request)) flatMap {
         case Success((value, req)) =>
-          provide(HttpRequestWithEntity[T](value, req))
+          provide(new HttpRequestWithEntity[T](value, req))
         case Failure(RejectionError(r)) =>
           reject(r)
         case Failure(Unmarshaller.NoContentException) =>
@@ -29,13 +29,13 @@ trait MarshallingEntityWithRequestDirective {
       }
     } & cancelRejections(RequestEntityExpectedRejection.getClass, classOf[UnsupportedRequestContentTypeRejection])
 
-  def requestUnmarshallerWithEntity[T](um: FromRequestUnmarshaller[T]): Directive1[HttpRequestWithEntity[T]] =
+  def requestAndUnmarshallerWithEntity[T](um: FromRequestUnmarshaller[T]): Directive1[HttpRequestWithEntity[T]] =
     extractRequestContext.flatMap[Tuple1[HttpRequestWithEntity[T]]] { ctx ⇒
       import ctx.{ executionContext, materializer }
 
       onComplete(um(ctx.request).map(_ -> ctx.request)) flatMap {
         case Success((value, req)) =>
-          provide(HttpRequestWithEntity[T](value, req))
+          provide(new HttpRequestWithEntity[T](value, req))
         case Failure(RejectionError(r)) =>
           reject(r)
         case Failure(Unmarshaller.NoContentException) =>
@@ -47,5 +47,10 @@ trait MarshallingEntityWithRequestDirective {
         case Failure(x) =>
           reject(MalformedRequestContentRejection(x.getMessage, x))
       }
+    } & cancelRejections(RequestEntityExpectedRejection.getClass, classOf[UnsupportedRequestContentTypeRejection])
+
+  def requestUnmarshallerWithEntity: Directive1[HttpRequestWithEntity[None.type]] =
+    extractRequestContext.flatMap[Tuple1[HttpRequestWithEntity[None.type]]] { ctx =>
+      provide(new HttpRequestWithEntity[None.type](None, ctx.request))
     } & cancelRejections(RequestEntityExpectedRejection.getClass, classOf[UnsupportedRequestContentTypeRejection])
 }

@@ -2,12 +2,18 @@ package org.simplereviews.persistence
 
 import com.google.inject.Inject
 
-import org.byrde.commons.persistence.sql.slick.table.TablesA
-import org.simplereviews.guice.Modules
+import org.simplereviews.configuration.Configuration
 import org.simplereviews.models.dto.{ Organization, OrganizationUser, User }
 
-class Tables @Inject() (modules: Modules) extends TablesA(modules.configuration.jdbcConfiguration) {
+import org.byrde.commons.persistence.sql.slick.table.TablesA
+
+import scala.concurrent.ExecutionContext
+
+class DataAccessLayerProvider @Inject() (configuration: Configuration) extends TablesA(configuration.jdbcConfiguration) {
   import profile.api._
+
+  implicit private val _: TablesA =
+    this
 
   class Users(_tableTag: Tag) extends BaseTableA[User](_tableTag, "users") {
     def * = (id, organizationId, email, password, firstName, lastName, isAdmin) <> ((User.apply _).tupled, User.unapply)
@@ -49,4 +55,7 @@ class Tables @Inject() (modules: Modules) extends TablesA(modules.configuration.
   }
 
   lazy val OrganizationUsersTQ = new TableQuery(new OrganizationUsers(_))
+
+  def apply()(implicit ec: ExecutionContext): DataAccessLayer =
+    new DataAccessLayer(this)(ec)
 }

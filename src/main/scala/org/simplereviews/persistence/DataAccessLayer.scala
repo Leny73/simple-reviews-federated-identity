@@ -1,34 +1,29 @@
 package org.simplereviews.persistence
 
-import slick.jdbc.JdbcBackend
+import org.mindrot.jbcrypt.BCrypt
+import org.simplereviews.controllers.requests.UpdateUserRequest
+import org.simplereviews.models.dto.{ Organization, OrganizationUser, User }
 
 import org.byrde.commons.persistence.sql.slick.dao.BaseDAONoStreamA
 import org.byrde.commons.utils.OptionUtils._
-import org.mindrot.jbcrypt.BCrypt
-import org.simplereviews.controllers.requests.UpdateUserRequest
-import org.simplereviews.guice.Modules
-import org.simplereviews.models.dto.{ Organization, OrganizationUser, User }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-class Persistence(modules: Modules) {
-  implicit val tables: Tables =
-    modules.tables
-
-  implicit val ec: ExecutionContext =
-    modules.akka.system.dispatchers.lookup("db.dispatcher")
+class DataAccessLayer(dataAccessLayerProvider: DataAccessLayerProvider)(implicit ec: ExecutionContext) {
+  implicit val tables: DataAccessLayerProvider =
+    dataAccessLayerProvider
 
   import tables._
   import tables.profile.api._
 
-  lazy val usersDAO =
-    new BaseDAONoStreamA[tables.Users, User](UsersTQ) {
-      def insertAndInsertOrganizationUserRow(row: User)(implicit session: Option[JdbcBackend#DatabaseDef => JdbcBackend#SessionDef] = None): Future[User] =
+  lazy val UsersDAO =
+    new BaseDAONoStreamA[Users, User](UsersTQ) {
+      def insertAndInsertOrganizationUserRow(row: User): Future[User] =
         findById(row.id).flatMap {
           _.fold {
             for {
               user <- insert(row)
-              _ <- organizationUsersDAO.insert(OrganizationUser.create(user.organizationId, user.id))
+              _ <- OrganizationUsersDAO.insert(OrganizationUser.create(user.organizationId, user.id))
             } yield user
           }(Future.successful)
         }
@@ -85,10 +80,19 @@ class Persistence(modules: Modules) {
 
       def updateWithUpdateUserRequest(userId: Long, updateUserRequest: UpdateUserRequest): Future[Option[User]] =
         findById(userId).flatMap(_.map { user =>
+          val futureFirstName =
+            updateUserRequest.firstName.map(updateFirstName(userId, _)).getOrElse(Future.successful(user.?))
+
+          val futureLastName =
+            updateUserRequest.lastName.map(updateLastName(userId, _)).getOrElse(Future.successful(user.?))
+
+          val futureEmail =
+            updateUserRequest.email.filter(_ != user.email).map(updateEmail(userId, _)).getOrElse(Future.successful(user.?))
+
           for {
-            firstNameUpdate <- updateUserRequest.firstName.map(updateFirstName(userId, _)).getOrElse(Future.successful(user.?))
-            lastNameUpdate <- updateUserRequest.lastName.map(updateLastName(userId, _)).getOrElse(Future.successful(user.?))
-            emailUpdate <- updateUserRequest.email.filter(_ != user.email).map(updateEmail(userId, _)).getOrElse(Future.successful(user.?))
+            firstNameUpdate <- futureFirstName
+            lastNameUpdate <- futureLastName
+            emailUpdate <- futureEmail
           } yield {
             user.copy(
               email = emailUpdate.map(_.email).getOrElse(user.email),
@@ -99,14 +103,14 @@ class Persistence(modules: Modules) {
         }.getOrElse(Future.successful(Option.empty[User])))
     }
 
-  lazy val organizationsDAO =
-    new BaseDAONoStreamA[tables.Organizations, Organization](OrganizationsTQ) {
+  lazy val OrganizationsDAO =
+    new BaseDAONoStreamA[Organizations, Organization](OrganizationsTQ) {
       def findByName(name: String): Future[Option[Organization]] =
         findByFilter(_.name === name.toLowerCase).map(_.headOption)
     }
 
-  lazy val organizationUsersDAO =
-    new BaseDAONoStreamA[tables.OrganizationUsers, OrganizationUser](OrganizationUsersTQ) {
+  lazy val OrganizationUsersDAO =
+    new BaseDAONoStreamA[OrganizationUsers, OrganizationUser](OrganizationUsersTQ) {
       def findByOrganizationAndUser(org: Long, user: Long): Future[Option[OrganizationUser]] =
         findByFilter { row =>
           row.organizationId === org && row.userId === user

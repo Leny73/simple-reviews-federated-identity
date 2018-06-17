@@ -3,14 +3,19 @@ package org.simplereviews.guice
 import com.google.inject.Inject
 
 import org.simplereviews.configuration.Configuration
+import org.simplereviews.persistence.DataAccessLayerProvider
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 
-class Akka @Inject() (configuration: Configuration) {
-  val system: ActorSystem =
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+class Akka @Inject() (configuration: Configuration, tables: DataAccessLayerProvider) {
+  implicit val system: ActorSystem =
     ActorSystem(configuration.name, configuration.underlyingConfig)
 
-  val materializer: ActorMaterializer =
-    ActorMaterializer()(system)
+  system.registerOnTermination { () =>
+    Await.result(tables.db.shutdown, 10 seconds)
+  }
 }
