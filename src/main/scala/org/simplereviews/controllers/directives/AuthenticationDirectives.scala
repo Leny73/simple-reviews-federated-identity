@@ -7,8 +7,6 @@ import org.byrde.commons.controllers.actions.auth.definitions.{ Admin, Org }
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
 import org.byrde.commons.utils.auth.JsonWebTokenWrapper
 import org.byrde.commons.utils.auth.conf.JwtConfig
-import org.simplereviews.guice.ModulesProvider
-import org.simplereviews.logger.impl.ApplicationLogger
 
 import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.server.Directive1
@@ -19,10 +17,6 @@ import scala.util.matching.Regex
 
 trait AuthenticationDirectives extends PlayJsonSupport {
   type JWT = String
-
-  //  TODO: Better strategy for file and login failure requests
-  //  val logger: ApplicationLogger =
-  //    modulesProvider.applicationLogger
 
   val Bearer: Regex =
     "(^Bearer) (.+)".r

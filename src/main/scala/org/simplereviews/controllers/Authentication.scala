@@ -6,11 +6,11 @@ import io.igl.jwt.Sub
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
 import org.byrde.commons.utils.TryUtils._
 import org.byrde.commons.utils.FutureUtils._
-import org.simplereviews.controllers.directives.{ ApiSupport, AuthenticationDirectives }
-import org.simplereviews.controllers.requests.{ ForgotPasswordRequest, SignInRequest }
+import org.simplereviews.controllers.directives.{ApiSupport, AuthenticationDirectives}
+import org.simplereviews.controllers.requests.{ForgotPasswordRequest, SignInRequest}
 import org.simplereviews.guice.ModulesProvider
 
-import org.byrde.commons.controllers.actions.auth.definitions.{ Admin, Org }
+import org.byrde.commons.controllers.actions.auth.definitions.{Admin, Org}
 import org.byrde.commons.utils.auth.JsonWebTokenWrapper
 import org.byrde.commons.utils.auth.conf.JwtConfig
 
@@ -19,7 +19,8 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.MarshallingEntityWithRequestDirective
 import akka.http.scaladsl.server.Route
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 class Authentication(modulesProvider: ModulesProvider)(implicit val ec: ExecutionContext) extends PlayJsonSupport with ApiSupport with AuthenticationDirectives with MarshallingEntityWithRequestDirective {
   lazy val routes: Route =
@@ -36,7 +37,7 @@ class Authentication(modulesProvider: ModulesProvider)(implicit val ec: Executio
             val signInRequest =
               request.body
 
-            val fn =
+            val fn: Future[Try[String]] =
               modulesProvider
                 .persistence
                 .UsersDAO
@@ -54,9 +55,7 @@ class Authentication(modulesProvider: ModulesProvider)(implicit val ec: Executio
                     E0400("Invalid organization, username, and password").!-
                 }
 
-            async[JWT]({
-              fn.flattenTry
-            }, jwt => {
+            async[JWT](fn.flattenTry, jwt => {
               respondWithHeader(RawHeader(jwtConfig.tokenName, s"Bearer $jwt")) {
                 complete(E0200)
               }
