@@ -1,6 +1,9 @@
 # SimpleReviews Organization Micro-Service
 
-This is a starter application that gives you everything you need to start building an AkkaHttp application.
+See API documentation: https://documenter.getpostman.com/view/4737499/RWMBQVnU
+
+- Staging environment: https://organization.stg.simple.reviews
+- Production environment: https://organization.simple.reviews
 
 ## Running
 
