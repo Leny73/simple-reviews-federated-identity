@@ -1,9 +1,9 @@
-# SimpleReviews Organization Micro-Service
+# SimpleReviews Federated Identity Micro-Service
 
 See API documentation: https://documenter.getpostman.com/view/4737499/RWMBQVnU
 
-- Staging environment: https://organization.stg.simple.reviews
-- Production environment: https://organization.simple.reviews
+- Staging environment: https://id.stg.simple.reviews
+- Production environment: https://id.simple.reviews
 
 ## Running
 
