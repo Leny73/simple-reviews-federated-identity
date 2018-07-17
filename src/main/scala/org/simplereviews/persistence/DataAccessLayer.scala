@@ -79,43 +79,46 @@ class DataAccessLayer(dataAccessLayerProvider: DataAccessLayerProvider)(implicit
         db.run((for { c <- UsersTQ if c.id === userId } yield c.lastName).update(lastName)).flatMap(_ => findById(userId))
 
       def updateWithUpdateUserRequest(userId: Long, updateUserRequest: UpdateUserRequest): Future[Option[User]] =
-        findById(userId).flatMap(_.map { user =>
-          val futureFirstName =
-            updateUserRequest.firstName.map(updateFirstName(userId, _)).getOrElse(Future.successful(user.?))
+        findById(userId).flatMap {
+          _.fold(Future.successful(Option.empty[User])) { user =>
+            val futureFirstName =
+              updateUserRequest
+                .firstName
+                .map(updateFirstName(userId, _))
+                .getOrElse(Future.successful(user.?))
 
-          val futureLastName =
-            updateUserRequest.lastName.map(updateLastName(userId, _)).getOrElse(Future.successful(user.?))
+            val futureLastName =
+              updateUserRequest
+                .lastName
+                .map(updateLastName(userId, _))
+                .getOrElse(Future.successful(user.?))
 
-          val futureEmail =
-            updateUserRequest.email.filter(_ != user.email).map(updateEmail(userId, _)).getOrElse(Future.successful(user.?))
+            val futureEmail =
+              updateUserRequest
+                .email.filter(_ != user.email)
+                .map(updateEmail(userId, _))
+                .getOrElse(Future.successful(user.?))
 
-          for {
-            firstNameUpdate <- futureFirstName
-            lastNameUpdate <- futureLastName
-            emailUpdate <- futureEmail
-          } yield {
-            user.copy(
-              email = emailUpdate.map(_.email).getOrElse(user.email),
-              firstName = firstNameUpdate.map(_.firstName).getOrElse(user.firstName),
-              lastName = lastNameUpdate.map(_.lastName).getOrElse(user.lastName)
-            )
-          }.?
-        }.getOrElse(Future.successful(Option.empty[User])))
+            for {
+              firstNameUpdate <- futureFirstName
+              lastNameUpdate <- futureLastName
+              emailUpdate <- futureEmail
+            } yield {
+              user.copy(
+                email = emailUpdate.map(_.email).getOrElse(user.email),
+                firstName = firstNameUpdate.map(_.firstName).getOrElse(user.firstName),
+                lastName = lastNameUpdate.map(_.lastName).getOrElse(user.lastName)
+              ).?
+            }
+          }
+        }
     }
 
   lazy val OrganizationsDAO =
-    new BaseDAONoStreamA[Organizations, Organization](OrganizationsTQ) {
-      def findByName(name: String): Future[Option[Organization]] =
-        findByFilter(_.name === name.toLowerCase).map(_.headOption)
-    }
+    new BaseDAONoStreamA[Organizations, Organization](OrganizationsTQ) {}
 
   lazy val OrganizationUsersDAO =
-    new BaseDAONoStreamA[OrganizationUsers, OrganizationUser](OrganizationUsersTQ) {
-      def findByOrganizationAndUser(org: Long, user: Long): Future[Option[OrganizationUser]] =
-        findByFilter { row =>
-          row.organizationId === org && row.userId === user
-        }.map(_.headOption)
-    }
+    new BaseDAONoStreamA[OrganizationUsers, OrganizationUser](OrganizationUsersTQ){}
 
   def applySchema(): Unit =
     db.run((UsersTQ.schema ++ OrganizationsTQ.schema ++ OrganizationUsersTQ.schema).create)

@@ -17,7 +17,8 @@ case class User(
     password: String,
     firstName: String,
     lastName: String,
-    isAdmin: Boolean
+    isAdmin: Boolean,
+    imageToken: Option[String] = None
 ) extends BaseEntity {
   lazy val name =
     s"$firstName $lastName"
