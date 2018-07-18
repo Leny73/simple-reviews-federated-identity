@@ -1,8 +1,8 @@
-package org.simplereviews.persistence
+package org.simplereviews.persistence.sql
 
 import org.mindrot.jbcrypt.BCrypt
 import org.simplereviews.controllers.requests.UpdateUserRequest
-import org.simplereviews.models.dto.{ Organization, OrganizationUser, User }
+import org.simplereviews.models.dto.{ Client, Organization, OrganizationUser, User }
 
 import org.byrde.commons.persistence.sql.slick.dao.BaseDAONoStreamA
 import org.byrde.commons.utils.OptionUtils._
@@ -22,8 +22,8 @@ class DataAccessLayer(dataAccessLayerProvider: DataAccessLayerProvider)(implicit
         findById(row.id).flatMap {
           _.fold {
             for {
-              user <- insert(row)
-              _ <- OrganizationUsersDAO.insert(OrganizationUser.create(user.organizationId, user.id))
+              user <- inserts(row).map(_.head)
+              _ <- OrganizationUsersDAO.inserts(OrganizationUser.create(user.organizationId, user.id))
             } yield user
           }(Future.successful)
         }
@@ -118,7 +118,17 @@ class DataAccessLayer(dataAccessLayerProvider: DataAccessLayerProvider)(implicit
     new BaseDAONoStreamA[Organizations, Organization](OrganizationsTQ) {}
 
   lazy val OrganizationUsersDAO =
-    new BaseDAONoStreamA[OrganizationUsers, OrganizationUser](OrganizationUsersTQ){}
+    new BaseDAONoStreamA[OrganizationUsers, OrganizationUser](OrganizationUsersTQ) {}
+
+  lazy val ClientsDAO =
+    new BaseDAONoStreamA[Clients, Client](ClientsTQ) {
+      def fetchAll: Future[Seq[Client]] =
+        db.run((for {
+          clients <- ClientsTQ
+        } yield {
+          clients
+        }).result)
+    }
 
   def applySchema(): Unit =
     db.run((UsersTQ.schema ++ OrganizationsTQ.schema ++ OrganizationUsersTQ.schema).create)

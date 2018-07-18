@@ -2,7 +2,7 @@ package org.simplereviews.guice
 
 import com.google.inject.Inject
 
-import org.simplereviews.persistence.DataAccessLayerProvider
+import org.simplereviews.persistence.sql.DataAccessLayerProvider
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._

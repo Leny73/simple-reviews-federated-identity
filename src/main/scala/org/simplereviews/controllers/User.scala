@@ -9,6 +9,9 @@ import org.byrde.commons.utils.FutureUtils._
 import org.simplereviews.controllers.directives.{ ApiSupport, AuthenticationDirectives }
 import org.simplereviews.controllers.requests.{ ChangePasswordRequest, UpdateUserRequest }
 import org.simplereviews.guice.ModulesProvider
+import org.simplereviews.models.Id
+import org.simplereviews.models.dto.Client
+import org.simplereviews.persistence.TokenStore
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -16,32 +19,36 @@ import akka.http.scaladsl.server.directives.{ HttpRequestWithEntity, Marshalling
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-class User(modulesProvider: ModulesProvider)(implicit val ec: ExecutionContext) extends PlayJsonSupport with ApiSupport with AuthenticationDirectives with MarshallingEntityWithRequestDirective {
-  val jwtConfig: JwtConfig =
-    modulesProvider.configuration.jwtConfiguration
-
+class User()(implicit val modulesProvider: ModulesProvider, val clients: Map[Id, Client], val ec: ExecutionContext) extends PlayJsonSupport with ApiSupport with AuthenticationDirectives with MarshallingEntityWithRequestDirective {
   lazy val routes: Route =
     pathPrefix(LongNumber) { userId =>
-      path("change-password") {
-        put {
-          isAuthenticatedAndSameUser(userId, jwtConfig) { _ =>
-            requestEntityUnmarshallerWithEntity(unmarshaller[ChangePasswordRequest]) { implicit request =>
-              changePassword(userId, request.body)
-            }
-          }
-        }
-      } ~ get {
-        requestUnmarshallerWithEntity { implicit request =>
-          getUser(userId)
-        }
-      } ~ put {
-        isAuthenticatedAndSameUser(userId, jwtConfig) { _ =>
-          requestEntityUnmarshallerWithEntity(unmarshaller[UpdateUserRequest]) { implicit request =>
-            updateUser(userId, request.body)
-          }
-        }
-      }
+      //      path("change-password") {
+      //        put {
+      //          isAuthenticatedAndSameUser(userId, jwtConfig) { _ =>
+      //            requestEntityUnmarshallerWithEntity(unmarshaller[ChangePasswordRequest]) { implicit request =>
+      //              changePassword(userId, request.body)
+      //            }
+      //          }
+      //        }
+      //      } ~ get {
+      //        requestUnmarshallerWithEntity { implicit request =>
+      //          getUser(userId)
+      //        }
+      //      } ~ put {
+      //        isAuthenticatedAndSameUser(userId, jwtConfig) { _ =>
+      //          requestEntityUnmarshallerWithEntity(unmarshaller[UpdateUserRequest]) { implicit request =>
+      //            updateUser(userId, request.body)
+      //          }
+      //        }
+      //      }
+      complete(E0200)
     }
+
+  val tokenStore: TokenStore =
+    modulesProvider.tokenStore
+
+  val jwtConfig: JwtConfig =
+    modulesProvider.configuration.jwtConfiguration
 
   private def getUser[T](userId: Long)(implicit req: HttpRequestWithEntity[T]): Route =
     asyncJson {

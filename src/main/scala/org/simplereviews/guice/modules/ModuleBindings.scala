@@ -7,7 +7,7 @@ import com.google.inject.AbstractModule
 import org.simplereviews.configuration.Configuration
 import org.simplereviews.guice.{ Akka, ModulesProvider, OnStart }
 import org.simplereviews.logger.impl.{ ApplicationLogger, ErrorLogger, RequestLogger }
-import org.simplereviews.persistence.DataAccessLayerProvider
+import org.simplereviews.persistence.sql.DataAccessLayerProvider
 
 class ModuleBindings extends AbstractModule with ScalaModule {
   override def configure(): Unit = {

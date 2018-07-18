@@ -8,6 +8,9 @@ object ThreadPools {
   lazy val Global: ExecutionContextExecutor =
     ExecutionContext.global
 
-  lazy val Database: ExecutionContextExecutor =
+  lazy val Postgres: ExecutionContextExecutor =
+    ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
+
+  lazy val Redis: ExecutionContextExecutor =
     ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 }

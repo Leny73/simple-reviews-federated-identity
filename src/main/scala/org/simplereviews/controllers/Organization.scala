@@ -7,6 +7,9 @@ import org.byrde.commons.utils.TryUtils._
 import org.simplereviews.controllers.directives.{ ApiSupport, AuthenticationDirectives }
 import org.simplereviews.controllers.requests.CreateUserRequest
 import org.simplereviews.guice.ModulesProvider
+import org.simplereviews.models.Id
+import org.simplereviews.models.dto.Client
+import org.simplereviews.persistence.TokenStore
 
 import org.byrde.commons.utils.auth.conf.JwtConfig
 
@@ -16,40 +19,44 @@ import akka.http.scaladsl.server.directives.{ HttpRequestWithEntity, Marshalling
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-class Organization(modulesProvider: ModulesProvider)(implicit val ec: ExecutionContext) extends PlayJsonSupport with ApiSupport with AuthenticationDirectives with MarshallingEntityWithRequestDirective {
+class Organization()(implicit val modulesProvider: ModulesProvider, val clients: Map[Id, Client], val ec: ExecutionContext) extends PlayJsonSupport with ApiSupport with AuthenticationDirectives with MarshallingEntityWithRequestDirective {
   lazy val routes: Route =
     organization
+
+  val tokenStore: TokenStore =
+    modulesProvider.tokenStore
 
   val jwtConfig: JwtConfig =
     modulesProvider.configuration.jwtConfiguration
 
   private def organization: Route =
     pathPrefix(LongNumber) { organizationId =>
-      path("users") {
-        get {
-          isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
-            requestUnmarshallerWithEntity { implicit request =>
-              listUsers(organizationId)
-            }
-          }
-        }
-      } ~ pathPrefix("user") {
-        post {
-          isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
-            requestEntityUnmarshallerWithEntity(unmarshaller[CreateUserRequest]) { implicit request =>
-              createUser(organizationId, request.body)
-            }
-          }
-        } ~ path(LongNumber) { userId =>
-          delete {
-            isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
-              requestUnmarshallerWithEntity { implicit request =>
-                deleteUser(userId)
-              }
-            }
-          }
-        }
-      }
+      //      path("users") {
+      //        get {
+      //          isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
+      //            requestUnmarshallerWithEntity { implicit request =>
+      //              listUsers(organizationId)
+      //            }
+      //          }
+      //        }
+      //      } ~ pathPrefix("user") {
+      //        post {
+      //          isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
+      //            requestEntityUnmarshallerWithEntity(unmarshaller[CreateUserRequest]) { implicit request =>
+      //              createUser(organizationId, request.body)
+      //            }
+      //          }
+      //        } ~ path(LongNumber) { userId =>
+      //          delete {
+      //            isAuthenticatedAndAdminAndPartOfOrganization(organizationId, jwtConfig) { _ =>
+      //              requestUnmarshallerWithEntity { implicit request =>
+      //                deleteUser(userId)
+      //              }
+      //            }
+      //          }
+      //        }
+      //      }
+      complete(E0200)
     }
 
   private def listUsers[T](organizationId: Long)(implicit req: HttpRequestWithEntity[T]): Route =
@@ -67,7 +74,7 @@ class Organization(modulesProvider: ModulesProvider)(implicit val ec: ExecutionC
         .OrganizationsDAO
         .findById(organizationId)
         .flatMap {
-          case Some(organization) =>
+          case Some(_) =>
             val (user, password) =
               org.simplereviews.models.dto.User.create(
                 organizationId,
@@ -94,6 +101,6 @@ class Organization(modulesProvider: ModulesProvider)(implicit val ec: ExecutionC
       modulesProvider
         .persistence
         .UsersDAO
-        .deleteById(userId)
+        .deleteByIds(userId)
     }, E0200)
 }

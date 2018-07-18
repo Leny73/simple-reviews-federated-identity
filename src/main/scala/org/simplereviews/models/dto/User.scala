@@ -2,9 +2,8 @@ package org.simplereviews.models.dto
 
 import org.byrde.commons.persistence.sql.slick.sqlbase.BaseEntity
 import org.mindrot.jbcrypt.BCrypt
-import org.simplereviews.controllers.Images
 import org.simplereviews.controllers.requests.CreateUserRequest
-import org.simplereviews.models.dto.User.GeneratedPassword
+import org.simplereviews.models.GeneratedPassword
 
 import play.api.libs.json.{ JsValue, Json, Writes }
 
@@ -25,8 +24,6 @@ case class User(
 }
 
 object User {
-  type GeneratedPassword = String
-
   implicit val writes: Writes[User] =
     new Writes[User] {
       override def writes(o: User): JsValue =
@@ -36,10 +33,8 @@ object User {
           "email" -> o.email,
           "firstName" -> o.firstName,
           "lastName" -> o.lastName,
-          //TODO: Update image path
-          //"organizationImage" -> Images.buildOrganizationImagePath(o.organizationId),
-          //"userImage" -> Images.buildUserImagePath(o.organizationId, o.id),
-          "isAdmin" -> o.isAdmin
+          "isAdmin" -> o.isAdmin,
+          "image" -> o.imageToken
         )
     }
 

@@ -9,13 +9,16 @@ lazy val utils =
     "net.codingwell" %% "scala-guice" % "4.1.0",
     "io.igl" %% "jwt" % "1.2.2",
     "de.svenkubiak" % "jBCrypt" % "0.4.1",
-    "org.byrde" % "commons_2.11" % "1.0.103")
+    "org.byrde" % "commons_2.11" % "1.0.123")
 
 lazy val orm =
   Seq(
     "com.typesafe.slick" % "slick-hikaricp_2.11" % "3.2.0",
-    "com.typesafe.slick" % "slick_2.11" % "3.2.0",
-    "com.lightbend.akka" %% "akka-stream-alpakka-slick" % "0.19")
+    "com.typesafe.slick" % "slick_2.11" % "3.2.0")
+
+lazy val redis =
+  Seq (
+    "org.sedis" %% "sedis" % "1.2.2")
 
 lazy val postgresql =
   Seq (

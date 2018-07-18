@@ -3,6 +3,8 @@ package org.simplereviews.controllers
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
 import org.simplereviews.controllers.directives.RequestResponseHandlingDirective
 import org.simplereviews.guice.ModulesProvider
+import org.simplereviews.models.Id
+import org.simplereviews.models.dto.Client
 
 import play.api.libs.json.Json
 
@@ -15,8 +17,9 @@ import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext
 
+//TODO: Update routes to no longer accept path parameters
 trait Routes extends RequestResponseHandlingDirective with MarshallingEntityWithRequestDirective {
-  def modulesProvider: ModulesProvider
+  implicit def modulesProvider: ModulesProvider
 
   implicit def ec: ExecutionContext
 
@@ -24,17 +27,19 @@ trait Routes extends RequestResponseHandlingDirective with MarshallingEntityWith
 
   implicit def timeout: Timeout
 
+  implicit def clients: Map[Id, Client]
+
   lazy val defaultRoutes: Route =
     get {
-      complete(OK -> Json.toJson(E0200("Pong!")))
+      complete(E0200("Pong!"))
     }
 
   lazy val pathBindings =
     Map(
       "ping" -> defaultRoutes,
-      "auth" -> new Authentication(modulesProvider).routes,
-      "org" -> new Organization(modulesProvider).routes,
-      "user" -> new User(modulesProvider).routes
+      "auth" -> new Authentication().routes,
+      "org" -> new Organization().routes,
+      "user" -> new User().routes
     )
 
   lazy val routes: Route =

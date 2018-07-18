@@ -25,7 +25,9 @@ trait RequestResponseHandlingDirective extends PlayJsonSupport with RejectionHan
           handleExceptions(exceptionHandler(request)) {
             addRequestId(id) {
               addResponseId(id) {
-                val start = System.currentTimeMillis
+                val start =
+                  System.currentTimeMillis
+
                 bagAndTag(request, id, start) {
                   route
                 }
@@ -47,14 +49,21 @@ trait RequestResponseHandlingDirective extends PlayJsonSupport with RejectionHan
           }
 
         errorLogger.error(serviceResponseException, req)
-        complete(serviceResponseException.status, Json.toJson(serviceResponseException))
+
+        complete(serviceResponseException.status -> Json.toJson(serviceResponseException))
     }
 
   private def requestId: Directive1[(HttpRequest, IdHeader)] =
     extractRequestContext.flatMap[Tuple1[(HttpRequest, IdHeader)]] { ctx =>
-      provide(ctx.request -> ctx.request.header[IdHeader].getOrElse {
-        IdHeader(UUID.randomUUID.toString)
-      })
+      provide(
+        ctx.request ->
+          ctx
+          .request
+          .header[IdHeader]
+          .getOrElse {
+            IdHeader(UUID.randomUUID.toString)
+          }
+      )
     }
 
   private def addRequestId(id: IdHeader): Directive0 =
@@ -74,7 +83,14 @@ trait RequestResponseHandlingDirective extends PlayJsonSupport with RejectionHan
 
   private def bagAndTag(req: HttpRequest, id: IdHeader, start: Long): Directive0 =
     mapResponse { response =>
-      requestLogger.request(id.value(), System.currentTimeMillis() - start, response.status.toString(), req)
+      requestLogger
+        .request(
+          id.value(),
+          System.currentTimeMillis() - start,
+          response.status.toString(),
+          req
+        )
+
       response
     }
 }

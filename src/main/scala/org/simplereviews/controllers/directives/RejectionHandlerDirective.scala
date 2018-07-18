@@ -10,8 +10,14 @@ trait RejectionHandlerDirective extends CORSDirective {
     RejectionHandler
       .newBuilder()
       .handleAll[MethodRejection] { rejections =>
-        lazy val methods = rejections.map(_.supported)
-        lazy val names = methods.map(_.name).mkString(", ")
+        lazy val methods =
+          rejections
+            .map(_.supported)
+
+        lazy val names =
+          methods
+            .map(_.name)
+            .mkString(", ")
 
         respondWithHeader(Allow(methods)) {
           options {
@@ -20,9 +26,9 @@ trait RejectionHandlerDirective extends CORSDirective {
             }
           } ~
             complete(
-              MethodNotAllowed,
-              s"HTTP method not allowed, supported methods: $names"
+              MethodNotAllowed -> s"HTTP method not allowed, supported methods: $names"
             )
         }
-      }.result()
+      }
+      .result()
 }

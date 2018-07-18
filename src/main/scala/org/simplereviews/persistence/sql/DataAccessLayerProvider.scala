@@ -1,10 +1,10 @@
-package org.simplereviews.persistence
+package org.simplereviews.persistence.sql
 
 import com.google.inject.Inject
 
 import org.simplereviews.configuration.Configuration
 import org.simplereviews.models.definitions.Permission
-import org.simplereviews.models.dto.{Client, Organization, OrganizationUser, User}
+import org.simplereviews.models.dto.{ Client, Organization, OrganizationUser, User }
 
 import org.byrde.commons.persistence.sql.slick.table.TablesA
 
@@ -71,7 +71,7 @@ class DataAccessLayerProvider @Inject() (configuration: Configuration) extends T
     implicit val permissionColumnType: JdbcType[Permission] with BaseTypedType[Permission] =
       MappedColumnType.base[Permission, String](
         p => p.value,
-        p => Permission(p)
+        p => Permission.apply(p)
       )
 
     val token: Rep[String] = column[String]("token")
