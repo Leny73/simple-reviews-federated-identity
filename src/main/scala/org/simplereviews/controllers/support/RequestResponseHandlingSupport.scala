@@ -1,22 +1,15 @@
-package org.simplereviews.controllers.directives
+package org.simplereviews.controllers.support
 
 import java.util.UUID
 
-import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
+import org.simplereviews.logger.impl.RequestLogger
 
-import org.byrde.commons.utils.exception.ServiceResponseException
-import org.simplereviews.logger.impl.{ ErrorLogger, RequestLogger }
-
-import play.api.libs.json.Json
-
-import akka.http.scaladsl.model.{ HttpRequest, IdHeader }
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ Directive0, Directive1, ExceptionHandler, Route }
+import akka.http.scaladsl.server._
 
-trait RequestResponseHandlingDirective extends PlayJsonSupport with RejectionHandlerDirective {
+trait RequestResponseHandlingSupport extends ExceptionHandlingSupport {
   def requestLogger: RequestLogger
-
-  def errorLogger: ErrorLogger
 
   def requestResponseHandler(route: Route): Route =
     cors {
@@ -35,22 +28,6 @@ trait RequestResponseHandlingDirective extends PlayJsonSupport with RejectionHan
             }
           }
       }
-    }
-
-  private def exceptionHandler(req: HttpRequest): ExceptionHandler =
-    ExceptionHandler {
-      case exception: Throwable =>
-        val serviceResponseException =
-          exception match {
-            case serviceResponseException: ServiceResponseException =>
-              serviceResponseException
-            case ex: Throwable =>
-              ServiceResponseException(ex)
-          }
-
-        errorLogger.error(serviceResponseException, req)
-
-        complete(serviceResponseException.status -> Json.toJson(serviceResponseException))
     }
 
   private def requestId: Directive1[(HttpRequest, IdHeader)] =

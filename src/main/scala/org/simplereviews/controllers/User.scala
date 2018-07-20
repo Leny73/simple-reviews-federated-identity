@@ -1,105 +1,148 @@
 package org.simplereviews.controllers
 
-import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
+import org.simplereviews.controllers.User.{ InvalidPassword, PasswordDoesntMatch, UserDoesNotExist }
+import org.simplereviews.controllers.requests.{ ChangePasswordRequest, UpdateUserRequest }
+import org.simplereviews.controllers.support.RouteSupport
+import org.simplereviews.guice.ModulesProvider
+import org.simplereviews.models.exceptions.RejectionException
+import org.simplereviews.models._
 
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
-import org.byrde.commons.utils.auth.conf.JwtConfig
 import org.byrde.commons.utils.TryUtils._
 import org.byrde.commons.utils.FutureUtils._
-import org.simplereviews.controllers.directives.{ ApiSupport, AuthenticationDirectives }
-import org.simplereviews.controllers.requests.{ ChangePasswordRequest, UpdateUserRequest }
-import org.simplereviews.guice.ModulesProvider
-import org.simplereviews.models.Id
-import org.simplereviews.models.dto.Client
-import org.simplereviews.persistence.TokenStore
+import org.byrde.commons.utils.auth.conf.JwtConfig
 
+import akka.http.scaladsl.model.RemoteAddress
+import akka.http.scaladsl.model.StatusCodes.{ BadRequest, NotFound }
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.directives.{ HttpRequestWithEntity, MarshallingEntityWithRequestDirective }
+import akka.http.scaladsl.server.{ RejectionHandler, Route }
+import akka.http.scaladsl.server.directives.MarshallingEntityWithRequestDirective
 
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
 
-class User()(implicit val modulesProvider: ModulesProvider, val clients: Map[Id, Client], val ec: ExecutionContext) extends PlayJsonSupport with ApiSupport with AuthenticationDirectives with MarshallingEntityWithRequestDirective {
+class User(val modulesProvider: ModulesProvider)(implicit val ec: ExecutionContext) extends RouteSupport with MarshallingEntityWithRequestDirective {
   lazy val routes: Route =
-    pathPrefix(LongNumber) { userId =>
-      //      path("change-password") {
-      //        put {
-      //          isAuthenticatedAndSameUser(userId, jwtConfig) { _ =>
-      //            requestEntityUnmarshallerWithEntity(unmarshaller[ChangePasswordRequest]) { implicit request =>
-      //              changePassword(userId, request.body)
-      //            }
-      //          }
-      //        }
-      //      } ~ get {
-      //        requestUnmarshallerWithEntity { implicit request =>
-      //          getUser(userId)
-      //        }
-      //      } ~ put {
-      //        isAuthenticatedAndSameUser(userId, jwtConfig) { _ =>
-      //          requestEntityUnmarshallerWithEntity(unmarshaller[UpdateUserRequest]) { implicit request =>
-      //            updateUser(userId, request.body)
-      //          }
-      //        }
-      //      }
-      complete(E0200)
+    getUser() ~ updateUser() ~ changePassword ~ path(LongNumber) { id =>
+      getUser(Some(id)) ~ updateUser(Some(id))
     }
-
-  val tokenStore: TokenStore =
-    modulesProvider.tokenStore
 
   val jwtConfig: JwtConfig =
     modulesProvider.configuration.jwtConfiguration
 
-  private def getUser[T](userId: Long)(implicit req: HttpRequestWithEntity[T]): Route =
-    asyncJson {
-      modulesProvider
-        .persistence
-        .UsersDAO
-        .findById(userId)
-        .map {
-          case Some(user) =>
-            user.!+
-          case None =>
-            E0404(s"User $userId does not exist").!-
-        }.flattenTry
+  def getUser(id: Option[Id] = None): Route =
+    get {
+      Authentication.isUserAuthenticated(requiresAdmin = id.isDefined, jwtConfig) { token =>
+        asyncJson(handleGetUser(id.getOrElse(token.id)).flattenTry)
+      }(modulesProvider)
     }
 
-  private def changePassword[T](userId: Long, password: ChangePasswordRequest)(implicit req: HttpRequestWithEntity[T]): Route =
-    asyncJson {
-      modulesProvider
-        .persistence
-        .UsersDAO
-        .findByIdAndPassword(userId, password.currentPassword).flatMap {
-          case Some(_) if password.newPassword != password.verifyNewPassword =>
-            Future.failed(E0400("New password doesn't match password verification"))
-          case Some(_) =>
-            modulesProvider.persistence.UsersDAO.findByIdAndPassword(userId, password.currentPassword).flatMap {
-              case None =>
-                Future.failed(E0400("Invalid password"))
-              case Some(_) =>
-                modulesProvider.persistence.UsersDAO.updatePassword(userId, password.newPassword) map {
-                  case Some(user) =>
-                    user.!+
-                  case None =>
-                    E0404(s"User $userId does not exist").!-
-                }
-            }.flattenTry
-          case _ =>
-            Future.failed(E0400("Wrong password"))
+  def updateUser(id: Option[Id] = None): Route =
+    put {
+      Authentication.isUserAuthenticated(requiresAdmin = id.isDefined, jwtConfig) { token =>
+        requestEntityUnmarshallerWithEntity(unmarshaller[UpdateUserRequest]) { implicit request =>
+          asyncJson(handleUpdateUser(id.getOrElse(token.id), request.body).flattenTry)
         }
+      }(modulesProvider)
     }
 
-  private def updateUser[T](userId: Long, updateUserRequest: UpdateUserRequest)(implicit req: HttpRequestWithEntity[T]): Route =
-    asyncJson {
+  def changePassword: Route =
+    path("change-password") {
+      put {
+        Authentication.isUserAuthenticated(requiresAdmin = false, jwtConfig, Service.Org(Permission.Writes)) { token =>
+          extractClientIP { ip =>
+            requestEntityUnmarshallerWithEntity(unmarshaller[ChangePasswordRequest]) { implicit request =>
+              async(handleChangePassword(ip, token.id, request.body).flattenTry, { newToken: Token =>
+                respondWithHeader(RawHeader(jwtConfig.tokenName, s"Bearer $newToken")) {
+                  complete(E0200)
+                }
+              })
+            }
+          }
+        }(modulesProvider)
+      }
+    }
+
+  private def handleGetUser[T](userId: Id): Future[Try[dto.User]] =
+    modulesProvider
+      .persistence
+      .UsersDAO
+      .findById(userId)
+      .map {
+        case Some(user) =>
+          user.!+
+
+        case None =>
+          UserDoesNotExist.!-
+      }
+
+  private def handleUpdateUser[T](userId: Id, updateUserRequest: UpdateUserRequest): Future[Try[dto.User]] =
+    modulesProvider
+      .persistence
+      .UsersDAO
+      .updateWithUpdateUserRequest(userId, updateUserRequest)
+      .map {
+        case Some(user) =>
+          user.!+
+
+        case None =>
+          UserDoesNotExist.!-
+      }
+
+  private def handleChangePassword[T](ip: RemoteAddress, userId: Long, password: ChangePasswordRequest): Future[Try[Token]] = {
+    val query =
       modulesProvider
         .persistence
         .UsersDAO
-        .updateWithUpdateUserRequest(userId, updateUserRequest)
-        .map {
-          case Some(user) =>
-            user.!+
-          case None =>
-            E0404(s"User $userId does not exist").!-
-        }.flattenTry
-    }
+        .findByIdAndPassword(userId, password.currentPassword)
+
+    if (password.newPassword != password.verifyNewPassword)
+      Future.failed(PasswordDoesntMatch)
+    else
+      query flatMap {
+        case Some(_) =>
+          modulesProvider
+            .tokenStore
+            .deleteTokensForUser(userId)
+
+          modulesProvider
+            .persistence.UsersDAO
+            .updatePassword(userId, password.newPassword)
+            .map { userOpt =>
+              Authentication.issueJwt(ip, userOpt.get, jwtConfig).!+
+            }
+
+        case _ =>
+          Future.failed(InvalidPassword)
+      }
+  }
+}
+
+object User {
+  final case object PasswordDoesntMatch
+    extends RejectionException
+
+  final case object InvalidPassword
+    extends RejectionException
+
+  final case object UserDoesNotExist
+    extends RejectionException
+
+  val handler: RejectionHandler =
+    RejectionHandler
+      .newBuilder()
+      .handle {
+        case PasswordDoesntMatch =>
+          complete((BadRequest, s"Your new passwords you entered do not match"))
+      }
+      .handle {
+        case InvalidPassword =>
+          complete((BadRequest, s"The password you entered does not match your current password"))
+      }
+      .handle {
+        case UserDoesNotExist =>
+          complete((NotFound, s"The user you are attempting to update does not exist"))
+      }
+      .result()
 }

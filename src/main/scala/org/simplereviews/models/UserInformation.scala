@@ -1,4 +1,4 @@
-package org.simplereviews.models.definitions
+package org.simplereviews.models
 
 trait UserInformation {
   def id: Long

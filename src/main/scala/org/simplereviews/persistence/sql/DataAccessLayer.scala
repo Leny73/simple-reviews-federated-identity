@@ -115,7 +115,10 @@ class DataAccessLayer(dataAccessLayerProvider: DataAccessLayerProvider)(implicit
     }
 
   lazy val OrganizationsDAO =
-    new BaseDAONoStreamA[Organizations, Organization](OrganizationsTQ) {}
+    new BaseDAONoStreamA[Organizations, Organization](OrganizationsTQ) {
+      def findByName(name: String): Future[Option[Organization]] =
+        findByFilter(_.name === name).map(_.headOption)
+    }
 
   lazy val OrganizationUsersDAO =
     new BaseDAONoStreamA[OrganizationUsers, OrganizationUser](OrganizationUsersTQ) {}
@@ -131,5 +134,10 @@ class DataAccessLayer(dataAccessLayerProvider: DataAccessLayerProvider)(implicit
     }
 
   def applySchema(): Unit =
-    db.run((UsersTQ.schema ++ OrganizationsTQ.schema ++ OrganizationUsersTQ.schema).create)
+    db.run(
+      (UsersTQ.schema ++
+      OrganizationsTQ.schema ++
+      OrganizationUsersTQ.schema ++
+      ClientsTQ.schema).create
+    )
 }

@@ -5,10 +5,9 @@ import com.google.inject.{ Guice, Injector }
 import org.simplereviews.configuration.{ CORSConfiguration, Configuration }
 import org.simplereviews.controllers.Routes
 import org.simplereviews.guice.ModulesProvider
+import org.simplereviews.guice.impl.Modules
 import org.simplereviews.guice.modules.ModuleBindings
 import org.simplereviews.logger.impl.{ ErrorLogger, RequestLogger }
-import org.simplereviews.models.Id
-import org.simplereviews.models.dto.Client
 import org.simplereviews.utils.ThreadPools
 
 import akka.actor.ActorSystem
@@ -16,8 +15,7 @@ import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 
-import scala.concurrent.{ Await, ExecutionContext }
-import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 
 object Server extends App with Routes {
   import net.codingwell.scalaguice.InjectorExtensions._
@@ -25,28 +23,14 @@ object Server extends App with Routes {
   private val injector: Injector =
     Guice.createInjector(new ModuleBindings())
 
-  override lazy val modulesProvider: ModulesProvider =
-    Guice.createInjector(new ModuleBindings()).instance[ModulesProvider]
-
-  override lazy val clients: Map[Id, Client] = {
-    val fn =
-      modulesProvider
-        .persistence
-        .ClientsDAO
-        .fetchAll
-
-    val clients =
-      Await.result(fn, 10.seconds)
-
-    clients
-      .map { client =>
-        client.id -> client
-      }
-      .toMap
-  }
-
   lazy val configuration: Configuration =
     modulesProvider.configuration
+
+  override lazy val modulesProvider: ModulesProvider =
+    Guice
+      .createInjector(new ModuleBindings())
+      .instance[Modules.Factory]
+      .withClassLoader(getClass.getClassLoader)
 
   override lazy val corsConfiguration: CORSConfiguration =
     configuration.corsConfiguration

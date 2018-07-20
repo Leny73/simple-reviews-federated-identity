@@ -52,20 +52,6 @@
         </rollingPolicy>
     </appender>
 
-    <appender name="SERVICE-APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_DIR}/request.log</file>
-        <encoder>
-            <pattern>%message%n</pattern>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_DIR}/request.%d.%i.log.gz</fileNamePattern>
-            <maxHistory>30</maxHistory>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>100MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
-        </rollingPolicy>
-    </appender>
-
     <logger name="akka" level="INFO" additivity="false">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="APPLICATION-APPENDER"/>
@@ -88,11 +74,6 @@
     <logger name="request" level="INFO" additivity="false">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="REQUEST-APPENDER"/>
-    </logger>
-
-    <logger name="service" level="INFO" additivity="false">
-        <appender-ref ref="STDOUT" />
-        <appender-ref ref="SERVICE-APPENDER"/>
     </logger>
 
     <root level="INFO">

@@ -1,6 +1,8 @@
-package org.simplereviews.controllers.directives
+package org.simplereviews.controllers.support
 
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
+
+import org.simplereviews.models.exceptions.RejectionException
 
 import org.byrde.commons.models.services.ServiceResponse
 
@@ -12,14 +14,14 @@ import akka.http.scaladsl.server.Route
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 
-trait ApiSupport extends PlayJsonSupport {
+trait RouteSupport extends PlayJsonSupport {
   def asyncJson[T](
     fn: Future[T],
     Err: Throwable => Throwable = identity
   )(implicit writes: Writes[T]): Route =
     async(fn, (res: T) => complete(Json.toJson(res)), Err)
 
-  def asyncWithDefaultResponse[T, TT <: ServiceResponse[_]](
+  def asyncWithDefaultJsonResponse[T, TT <: ServiceResponse[_]](
     fn: Future[T],
     Ok: TT,
     Err: Throwable => Throwable = identity
@@ -35,6 +37,11 @@ trait ApiSupport extends PlayJsonSupport {
       case Success(res) =>
         Ok(res)
       case Failure(ex) =>
-        throw Err(ex)
+        ex match {
+          case ex: RejectionException =>
+            reject(ex)
+          case _ =>
+            throw Err(ex)
+        }
     }
 }

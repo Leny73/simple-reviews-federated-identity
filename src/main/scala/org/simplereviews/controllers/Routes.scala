@@ -1,15 +1,10 @@
 package org.simplereviews.controllers
 
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
-import org.simplereviews.controllers.directives.RequestResponseHandlingDirective
+import org.simplereviews.controllers.support.RequestResponseHandlingSupport
 import org.simplereviews.guice.ModulesProvider
-import org.simplereviews.models.Id
-import org.simplereviews.models.dto.Client
-
-import play.api.libs.json.Json
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.MarshallingEntityWithRequestDirective
@@ -18,16 +13,15 @@ import akka.util.Timeout
 import scala.concurrent.ExecutionContext
 
 //TODO: Update routes to no longer accept path parameters
-trait Routes extends RequestResponseHandlingDirective with MarshallingEntityWithRequestDirective {
-  implicit def modulesProvider: ModulesProvider
+//TODO: Handle create user exception
+trait Routes extends RequestResponseHandlingSupport with MarshallingEntityWithRequestDirective {
+  def modulesProvider: ModulesProvider
 
   implicit def ec: ExecutionContext
 
   implicit def system: ActorSystem
 
   implicit def timeout: Timeout
-
-  implicit def clients: Map[Id, Client]
 
   lazy val defaultRoutes: Route =
     get {
@@ -37,9 +31,9 @@ trait Routes extends RequestResponseHandlingDirective with MarshallingEntityWith
   lazy val pathBindings =
     Map(
       "ping" -> defaultRoutes,
-      "auth" -> new Authentication().routes,
-      "org" -> new Organization().routes,
-      "user" -> new User().routes
+      "auth" -> new Authentication(modulesProvider).routes,
+      "org" -> new Organization(modulesProvider).routes,
+      "user" -> new User(modulesProvider).routes
     )
 
   lazy val routes: Route =

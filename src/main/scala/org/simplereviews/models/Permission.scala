@@ -1,4 +1,4 @@
-package org.simplereviews.models.definitions
+package org.simplereviews.models
 
 sealed trait Permission {
   def value: String
@@ -33,7 +33,7 @@ object Permission {
 
     override def equals(permission: Permission): Boolean =
       permission match {
-        case Permission.Reads =>
+        case Permission.Reads | Permission.All =>
           true
         case _ =>
           false
@@ -46,7 +46,7 @@ object Permission {
 
     override def equals(permission: Permission): Boolean =
       permission match {
-        case Permission.Writes =>
+        case Permission.Writes | Permission.All =>
           true
         case _ =>
           false

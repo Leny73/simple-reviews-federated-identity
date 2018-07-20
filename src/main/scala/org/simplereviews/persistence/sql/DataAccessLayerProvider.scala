@@ -3,7 +3,7 @@ package org.simplereviews.persistence.sql
 import com.google.inject.Inject
 
 import org.simplereviews.configuration.Configuration
-import org.simplereviews.models.definitions.Permission
+import org.simplereviews.models.Permission
 import org.simplereviews.models.dto.{ Client, Organization, OrganizationUser, User }
 
 import org.byrde.commons.persistence.sql.slick.table.TablesA
@@ -26,7 +26,7 @@ class DataAccessLayerProvider @Inject() (configuration: Configuration) extends T
       column[Long]("id", O.AutoInc)
 
     val organizationId: Rep[Long] = column[Long]("organization_id")
-    val email: Rep[String] = column[String]("email", O.Length(255, varying = true), O.Unique)
+    val email: Rep[String] = column[String]("email", O.Length(255, varying = true))
     val password: Rep[String] = column[String]("password", O.Length(255, varying = true))
     val firstName: Rep[String] = column[String]("first_name", O.Length(255, varying = true))
     val lastName: Rep[String] = column[String]("last_name", O.Length(255, varying = true))
@@ -66,7 +66,7 @@ class DataAccessLayerProvider @Inject() (configuration: Configuration) extends T
   lazy val OrganizationUsersTQ = new TableQuery(new OrganizationUsers(_))
 
   class Clients(_tableTag: Tag) extends BaseTableA[Client](_tableTag, "clients") {
-    def * = (id, token, googlePermissions, facebookPermissions, s3Permissions) <> ((Client.apply _).tupled, Client.unapply)
+    def * = (id, token, orgPermission, googlePermissions, facebookPermissions, s3Permissions) <> ((Client.apply _).tupled, Client.unapply)
 
     implicit val permissionColumnType: JdbcType[Permission] with BaseTypedType[Permission] =
       MappedColumnType.base[Permission, String](
@@ -75,6 +75,7 @@ class DataAccessLayerProvider @Inject() (configuration: Configuration) extends T
       )
 
     val token: Rep[String] = column[String]("token")
+    val orgPermission: Rep[Permission] = column[Permission]("org_permission")
     val googlePermissions: Rep[Permission] = column[Permission]("google_permissions")
     val facebookPermissions: Rep[Permission] = column[Permission]("facebook_permissions")
     val s3Permissions: Rep[Permission] = column[Permission]("s3_permissions")

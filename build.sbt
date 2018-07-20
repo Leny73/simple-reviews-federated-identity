@@ -6,10 +6,15 @@ lazy val jsonParsingLibrary =
 
 lazy val utils =
   Seq(
-    "net.codingwell" %% "scala-guice" % "4.1.0",
     "io.igl" %% "jwt" % "1.2.2",
     "de.svenkubiak" % "jBCrypt" % "0.4.1",
-    "org.byrde" % "commons_2.11" % "1.0.123")
+    "org.byrde" % "commons_2.11" % "1.0.131")
+
+lazy val guice =
+  Seq(
+    "net.codingwell" %% "scala-guice" % "4.2.1",
+    "com.google.inject" % "guice" % "4.2.0",
+    "com.google.inject.extensions" % "guice-assistedinject" % "4.2.0")
 
 lazy val orm =
   Seq(
@@ -32,7 +37,7 @@ lazy val root =
         version         := "1.0",
         scalaVersion    := "2.11.11"
       )),
-      name := "simple-reviews-organization",
+      name := "simple-reviews-federated-identity",
       scalacOptions ++=
         Seq(
           "-unchecked",
@@ -59,4 +64,4 @@ lazy val root =
           "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
           "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
           "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
-          "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test) ++ utils ++ orm ++ postgresql :+ jsonParsingLibrary).enablePlugins(JavaAppPackaging)
+          "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test) ++ utils ++ guice ++ orm ++ postgresql :+ jsonParsingLibrary).enablePlugins(JavaAppPackaging)

@@ -1,4 +1,4 @@
-package org.simplereviews.controllers.directives
+package org.simplereviews.controllers.support
 
 import org.simplereviews.configuration.CORSConfiguration
 
@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives.respondWithHeaders
 import akka.http.scaladsl.server.Route
 
-trait CORSDirective {
+trait CORSSupport {
   val corsConfiguration: CORSConfiguration
 
   val origins: Seq[RawHeader] =

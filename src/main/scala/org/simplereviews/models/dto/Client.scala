@@ -1,6 +1,7 @@
 package org.simplereviews.models.dto
 
-import org.simplereviews.models.{ Id, Token }
-import org.simplereviews.models.definitions.Permission
+import org.simplereviews.models.{ Id, Permission, Token }
 
-case class Client(id: Id, token: Token, googlePermissions: Permission, facebookPermission: Permission, s3Permission: Permission)
+import org.byrde.commons.persistence.sql.slick.sqlbase.BaseEntity
+
+case class Client(id: Id, token: Token, orgPermission: Permission, googlePermissions: Permission, facebookPermission: Permission, s3Permission: Permission) extends BaseEntity

@@ -60,12 +60,9 @@ object LoggingInformation {
         )
     }
 
-  implicit val exceptionWithHttpRequest: LoggingInformation[(Throwable, HttpRequest)] =
-    new LoggingInformation[(Throwable, HttpRequest)] {
-      override def log(elem: (Throwable, HttpRequest)): JsObject = {
-        val (ex, req) =
-          elem._1 -> elem._2
-
+  implicit val exception: LoggingInformation[Throwable] =
+    new LoggingInformation[Throwable] {
+      override def log(elem: Throwable): JsObject = {
         def serializeException(ex: Throwable): JsObject = {
           def loop(throwable: Throwable): JsObject = {
             val causedBy =
@@ -89,10 +86,20 @@ object LoggingInformation {
           ) ++ loop(ex.getCause)
         }
 
-        httpRequestInformation(req) ++ Json.obj(
-          "message" -> ex.getMessage,
-          "exception" -> serializeException(ex)
+        Json.obj(
+          "message" -> elem.getMessage,
+          "exception" -> serializeException(elem)
         )
+      }
+    }
+
+  implicit val exceptionWithHttpRequest: LoggingInformation[(Throwable, HttpRequest)] =
+    new LoggingInformation[(Throwable, HttpRequest)] {
+      override def log(elem: (Throwable, HttpRequest)): JsObject = {
+        val (ex, req) =
+          elem._1 -> elem._2
+
+        httpRequestInformation(req) ++ exception(ex)
       }
     }
 }
