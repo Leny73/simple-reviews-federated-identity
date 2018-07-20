@@ -31,7 +31,7 @@ class DataAccessLayerProvider @Inject() (configuration: Configuration) extends T
     val firstName: Rep[String] = column[String]("first_name", O.Length(255, varying = true))
     val lastName: Rep[String] = column[String]("last_name", O.Length(255, varying = true))
     val isAdmin: Rep[Boolean] = column[Boolean]("is_admin")
-    val imageToken: Rep[Option[String]] = column[Option[String]]("image_token", O.Length(255, varying = true))
+    val imageToken: Rep[String] = column[String]("image_token", O.Length(255, varying = true))
 
     lazy val userPK = primaryKey("id", (organizationId, email))
     lazy val organizationFk = foreignKey("fk_organization", organizationId, OrganizationsTQ)(_.id)
@@ -43,7 +43,7 @@ class DataAccessLayerProvider @Inject() (configuration: Configuration) extends T
     def * = (id, name, imageToken, googleToken, facebookToken) <> ((Organization.apply _).tupled, Organization.unapply)
 
     val name: Rep[String] = column[String]("organization", O.Length(255, varying = true), O.Unique)
-    val imageToken: Rep[Option[String]] = column[Option[String]]("image_token", O.Length(255, varying = true))
+    val imageToken: Rep[String] = column[String]("image_token", O.Length(255, varying = true))
     val googleToken: Rep[Option[String]] = column[Option[String]]("google", O.Length(255, varying = true))
     val facebookToken: Rep[Option[String]] = column[Option[String]]("facebook", O.Length(255, varying = true))
 

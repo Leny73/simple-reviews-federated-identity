@@ -10,6 +10,7 @@ import org.simplereviews.models.Service.Org
 import org.simplereviews.models._
 import org.simplereviews.models.exceptions.RejectionException
 import org.simplereviews.persistence.TokenStore
+import org.simplereviews.utils.KeyGenerator
 
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
 import org.byrde.commons.utils.FutureUtils._
@@ -19,7 +20,7 @@ import org.byrde.commons.utils.auth.conf.JwtConfig
 
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.RemoteAddress
-import akka.http.scaladsl.model.StatusCodes.{ BadRequest, Forbidden, Unauthorized, NotFound }
+import akka.http.scaladsl.model.StatusCodes.{ BadRequest, Forbidden, NotFound, Unauthorized }
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -119,7 +120,7 @@ class Authentication(val modulesProvider: ModulesProvider)(implicit val ec: Exec
     query flatMap {
       case Some(user) =>
         val generatedPassword =
-          org.simplereviews.models.dto.User.generateKey
+          KeyGenerator.generateKey
 
         modulesProvider
           .tokenStore

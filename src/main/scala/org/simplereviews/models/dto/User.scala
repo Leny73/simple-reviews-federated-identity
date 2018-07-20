@@ -5,14 +5,13 @@ import org.mindrot.jbcrypt.BCrypt
 import org.byrde.commons.persistence.sql.slick.sqlbase.BaseEntity
 import org.byrde.commons.utils.JsonUtils._
 import org.byrde.commons.utils.OptionUtils._
-
 import org.simplereviews.controllers.requests.CreateUserRequest
 import org.simplereviews.models.GeneratedKey
+import org.simplereviews.utils.KeyGenerator
 
 import play.api.libs.json._
 
 import scala.language.implicitConversions
-import scala.util.Random
 
 case class User(
     id: Long,
@@ -61,17 +60,14 @@ object User {
 
   def create(organizationId: Long, email: String, firstName: String, lastName: String, isAdmin: Boolean): (User, GeneratedKey) = {
     val generatedPassword =
-      generateKey
+      KeyGenerator.generateKey
 
     create(organizationId, email, generatedPassword, firstName, lastName, isAdmin) -> generatedPassword
   }
 
   def create(organizationId: Long, email: String, password: String, firstName: String, lastName: String, isAdmin: Boolean): User =
-    User(0, organizationId, email, BCrypt.hashpw(password, BCrypt.gensalt()), standardizeName(firstName), standardizeName(lastName), isAdmin, generateKey)
+    User(0, organizationId, email, BCrypt.hashpw(password, BCrypt.gensalt()), standardizeName(firstName), standardizeName(lastName), isAdmin, KeyGenerator.generateKey)
 
   def standardizeName(name: String): String =
     name.trim.toLowerCase.capitalize
-
-  def generateKey: GeneratedKey =
-    String.valueOf(Random.alphanumeric.take(10).toArray)
 }

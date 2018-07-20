@@ -2,20 +2,20 @@ package org.simplereviews.controllers.support
 
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 
-import org.simplereviews.controllers.{Authentication, Organization, User}
+import org.simplereviews.controllers.{ Authentication, Organization, User }
 import org.simplereviews.logger.impl.ErrorLogger
 
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary.E0500
-import org.byrde.commons.utils.exception.{ClientException, ServiceResponseException}
+import org.byrde.commons.utils.exception.{ ClientException, ServiceResponseException }
 
 import play.api.libs.json.Json
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, HttpResponse}
+import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, HttpRequest, HttpResponse }
 import akka.http.scaladsl.model.headers.Allow
-import akka.http.scaladsl.server.Directives.{complete, options, respondWithHeader}
-import akka.http.scaladsl.server.{ExceptionHandler, MethodRejection, RejectionHandler}
+import akka.http.scaladsl.server.Directives.{ complete, options, respondWithHeader }
+import akka.http.scaladsl.server.{ ExceptionHandler, MethodRejection, RejectionHandler }
 
 trait ExceptionHandlingSupport extends PlayJsonSupport with CORSSupport {
   def errorLogger: ErrorLogger
