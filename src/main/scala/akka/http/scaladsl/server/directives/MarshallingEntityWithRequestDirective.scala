@@ -1,5 +1,7 @@
 package akka.http.scaladsl.server.directives
 
+import org.byrde.commons.utils.OptionUtils._
+
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives.{ cancelRejections, extractRequestContext, provide }
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
@@ -23,7 +25,7 @@ trait MarshallingEntityWithRequestDirective {
         case Failure(Unmarshaller.UnsupportedContentTypeException(x)) =>
           reject(UnsupportedRequestContentTypeRejection(x))
         case Failure(x: IllegalArgumentException) =>
-          reject(ValidationRejection(x.getMessage, Some(x)))
+          reject(ValidationRejection(x.getMessage, x.?))
         case Failure(x) =>
           reject(MalformedRequestContentRejection(x.getMessage, x))
       }
@@ -43,7 +45,7 @@ trait MarshallingEntityWithRequestDirective {
         case Failure(Unmarshaller.UnsupportedContentTypeException(x)) =>
           reject(UnsupportedRequestContentTypeRejection(x))
         case Failure(x: IllegalArgumentException) =>
-          reject(ValidationRejection(x.getMessage, Some(x)))
+          reject(ValidationRejection(x.getMessage, x.?))
         case Failure(x) =>
           reject(MalformedRequestContentRejection(x.getMessage, x))
       }

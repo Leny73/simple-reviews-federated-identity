@@ -119,7 +119,7 @@ class Authentication(val modulesProvider: ModulesProvider)(implicit val ec: Exec
     query flatMap {
       case Some(user) =>
         val generatedPassword =
-          org.simplereviews.models.dto.User.generatePassword
+          org.simplereviews.models.dto.User.generateKey
 
         modulesProvider
           .tokenStore

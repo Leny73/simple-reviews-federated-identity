@@ -4,8 +4,10 @@ import org.mindrot.jbcrypt.BCrypt
 
 import org.byrde.commons.persistence.sql.slick.sqlbase.BaseEntity
 import org.byrde.commons.utils.JsonUtils._
+import org.byrde.commons.utils.OptionUtils._
+
 import org.simplereviews.controllers.requests.CreateUserRequest
-import org.simplereviews.models.GeneratedPassword
+import org.simplereviews.models.GeneratedKey
 
 import play.api.libs.json._
 
@@ -20,13 +22,13 @@ case class User(
     firstName: String,
     lastName: String,
     isAdmin: Boolean,
-    imageTokenOpt: Option[String] = None
+    imageToken: String
 ) extends BaseEntity {
   lazy val name =
     s"$firstName $lastName"
 
-  lazy val imageKeyOpt: Option[String] =
-    imageTokenOpt.map(imageToken => s"$organizationId/$imageToken")
+  lazy val imageKey: String =
+    s"$organizationId/$imageToken"
 }
 
 object User {
@@ -38,7 +40,7 @@ object User {
       override def writes(o: User): JsValue = {
         val passwordOpt =
           if (writePassword)
-            Some(o.password)
+            o.password.?
           else
             Option.empty[String]
 
@@ -48,29 +50,28 @@ object User {
           "email" -> o.email,
           "firstName" -> o.firstName,
           "lastName" -> o.lastName,
-          "isAdmin" -> o.isAdmin
-        ) +?
-          o.imageKeyOpt.map(imageKey => "image" -> JsString(imageKey)) +?
-          passwordOpt.map(password => "password" -> JsString(password))
+          "isAdmin" -> o.isAdmin,
+          "imageKey" -> o.imageKey
+        ) +? passwordOpt.map(password => "password" -> JsString(password))
       }
     }
 
-  def create(organizationId: Long, user: CreateUserRequest): (User, GeneratedPassword) =
+  def create(organizationId: Long, user: CreateUserRequest): (User, GeneratedKey) =
     create(organizationId, user.email, user.firstName, user.lastName, isAdmin = user.isAdmin)
 
-  def create(organizationId: Long, email: String, firstName: String, lastName: String, isAdmin: Boolean): (User, GeneratedPassword) = {
+  def create(organizationId: Long, email: String, firstName: String, lastName: String, isAdmin: Boolean): (User, GeneratedKey) = {
     val generatedPassword =
-      generatePassword
+      generateKey
 
     create(organizationId, email, generatedPassword, firstName, lastName, isAdmin) -> generatedPassword
   }
 
   def create(organizationId: Long, email: String, password: String, firstName: String, lastName: String, isAdmin: Boolean): User =
-    User(0, organizationId, email, BCrypt.hashpw(password, BCrypt.gensalt()), standardizeName(firstName), standardizeName(lastName), isAdmin)
+    User(0, organizationId, email, BCrypt.hashpw(password, BCrypt.gensalt()), standardizeName(firstName), standardizeName(lastName), isAdmin, generateKey)
 
   def standardizeName(name: String): String =
     name.trim.toLowerCase.capitalize
 
-  def generatePassword: GeneratedPassword =
+  def generateKey: GeneratedKey =
     String.valueOf(Random.alphanumeric.take(10).toArray)
 }

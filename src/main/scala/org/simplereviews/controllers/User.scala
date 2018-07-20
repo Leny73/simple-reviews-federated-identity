@@ -11,6 +11,7 @@ import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
 import org.byrde.commons.utils.TryUtils._
 import org.byrde.commons.utils.FutureUtils._
 import org.byrde.commons.utils.auth.conf.JwtConfig
+import org.byrde.commons.utils.OptionUtils._
 
 import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.StatusCodes.{ BadRequest, NotFound }
@@ -25,7 +26,7 @@ import scala.util.Try
 class User(val modulesProvider: ModulesProvider)(implicit val ec: ExecutionContext) extends RouteSupport with MarshallingEntityWithRequestDirective {
   lazy val routes: Route =
     getUser() ~ updateUser() ~ changePassword ~ path(LongNumber) { id =>
-      getUser(Some(id)) ~ updateUser(Some(id))
+      getUser(id.?) ~ updateUser(id.?)
     }
 
   val jwtConfig: JwtConfig =

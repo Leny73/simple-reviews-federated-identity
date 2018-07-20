@@ -5,5 +5,5 @@ package object models {
 
   type Token = String
 
-  type GeneratedPassword = String
+  type GeneratedKey = String
 }

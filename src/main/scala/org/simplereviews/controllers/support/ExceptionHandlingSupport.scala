@@ -2,20 +2,20 @@ package org.simplereviews.controllers.support
 
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport
 
-import org.simplereviews.controllers.{ Authentication, Organization }
+import org.simplereviews.controllers.{Authentication, Organization, User}
 import org.simplereviews.logger.impl.ErrorLogger
 
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary.E0500
-import org.byrde.commons.utils.exception.{ ClientException, ServiceResponseException }
+import org.byrde.commons.utils.exception.{ClientException, ServiceResponseException}
 
 import play.api.libs.json.Json
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, HttpRequest, HttpResponse }
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, HttpResponse}
 import akka.http.scaladsl.model.headers.Allow
-import akka.http.scaladsl.server.Directives.{ complete, options, respondWithHeader }
-import akka.http.scaladsl.server.{ ExceptionHandler, MethodRejection, RejectionHandler }
+import akka.http.scaladsl.server.Directives.{complete, options, respondWithHeader}
+import akka.http.scaladsl.server.{ExceptionHandler, MethodRejection, RejectionHandler}
 
 trait ExceptionHandlingSupport extends PlayJsonSupport with CORSSupport {
   def errorLogger: ErrorLogger
@@ -48,6 +48,7 @@ trait ExceptionHandlingSupport extends PlayJsonSupport with CORSSupport {
       .result()
       .withFallback(Authentication.handler)
       .withFallback(Organization.handler)
+      .withFallback(User.handler)
       .withFallback(RejectionHandler.default)
       .mapRejectionResponse {
         case res @ HttpResponse(_status, _, ent: HttpEntity.Strict, _) if ent.contentType != ContentTypes.`application/json` =>
@@ -58,17 +59,16 @@ trait ExceptionHandlingSupport extends PlayJsonSupport with CORSSupport {
             ent
               .data
               .utf8String
-              .replaceAll("\"", "")
 
-          val serviceResponseException =
+          val clientException =
             ClientException(message, ClientError, status)
 
-          errorLogger.error(serviceResponseException)
+          errorLogger.error(clientException)
 
           res.copy(entity =
             HttpEntity(
               ContentTypes.`application/json`,
-              Json.stringify(serviceResponseException.toJson)
+              Json.stringify(clientException.toJson)
             ))
 
         case response =>
@@ -79,16 +79,16 @@ trait ExceptionHandlingSupport extends PlayJsonSupport with CORSSupport {
   def exceptionHandler(req: HttpRequest): ExceptionHandler =
     ExceptionHandler {
       case exception: Throwable =>
-        val serviceResponseException =
+        val serviceException =
           exception match {
-            case serviceResponseException: ServiceResponseException[_] =>
-              errorLogger.error(serviceResponseException, req)
-              serviceResponseException
-            case ex: Throwable =>
-              errorLogger.error(ex, req)
-              E0500(ex)
+            case serviceException: ServiceResponseException[_] =>
+              errorLogger.error(serviceException, req)
+              serviceException
+            case _ =>
+              errorLogger.error(exception, req)
+              E0500(exception)
           }
 
-        complete(serviceResponseException.status -> Json.toJson(serviceResponseException))
+        complete(Json.toJson(serviceException))
     }
 }
