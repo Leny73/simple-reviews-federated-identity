@@ -210,7 +210,7 @@ object Authentication {
       }
       .handle {
         case MissingTokenClaims =>
-          complete((BadRequest, "The supplied token is not valid"))
+          complete((Unauthorized, "The supplied token is not valid"))
       }
       .result()
 
