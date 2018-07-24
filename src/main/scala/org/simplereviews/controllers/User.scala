@@ -25,27 +25,31 @@ import scala.util.Try
 
 class User(val modulesProvider: ModulesProvider)(implicit val ec: ExecutionContext) extends RouteSupport with MarshallingEntityWithRequestDirective {
   lazy val routes: Route =
-    getUser() ~ updateUser() ~ changePassword ~ path(LongNumber) { id =>
+    changePassword ~ path(LongNumber) { id =>
       getUser(id.?) ~ updateUser(id.?)
-    }
+    } ~ getUser() ~ updateUser()
 
   val jwtConfig: JwtConfig =
     modulesProvider.configuration.jwtConfiguration
 
   def getUser(id: Option[Id] = None): Route =
-    get {
-      Authentication.isUserAuthenticated(requiresAdmin = id.isDefined, jwtConfig) { token =>
-        asyncJson(handleGetUser(id.getOrElse(token.id)).flattenTry)
-      }(modulesProvider)
+    pathEnd {
+      get {
+        Authentication.isUserAuthenticated(requiresAdmin = id.isDefined, jwtConfig) { token =>
+          asyncJson(handleGetUser(id.getOrElse(token.id)).flattenTry)
+        }(modulesProvider)
+      }
     }
 
   def updateUser(id: Option[Id] = None): Route =
-    put {
-      Authentication.isUserAuthenticated(requiresAdmin = id.isDefined, jwtConfig) { token =>
-        requestEntityUnmarshallerWithEntity(unmarshaller[UpdateUserRequest]) { implicit request =>
-          asyncJson(handleUpdateUser(id.getOrElse(token.id), request.body).flattenTry)
-        }
-      }(modulesProvider)
+    pathEnd {
+      put {
+        Authentication.isUserAuthenticated(requiresAdmin = id.isDefined, jwtConfig) { token =>
+          requestEntityUnmarshallerWithEntity(unmarshaller[UpdateUserRequest]) { implicit request =>
+            asyncJson(handleUpdateUser(id.getOrElse(token.id), request.body).flattenTry)
+          }
+        }(modulesProvider)
+      }
     }
 
   def changePassword: Route =
@@ -135,7 +139,7 @@ object User {
       .newBuilder()
       .handle {
         case PasswordDoesntMatch =>
-          complete((BadRequest, s"Your new passwords you entered do not match"))
+          complete((BadRequest, s"The new passwords you entered do not match"))
       }
       .handle {
         case InvalidPassword =>
