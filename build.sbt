@@ -8,7 +8,7 @@ lazy val utils =
   Seq(
     "io.igl" %% "jwt" % "1.2.2",
     "de.svenkubiak" % "jBCrypt" % "0.4.1",
-    "org.byrde" % "commons_2.11" % "1.0.131")
+    "org.byrde" % "commons_2.11" % "1.0.139")
 
 lazy val guice =
   Seq(
