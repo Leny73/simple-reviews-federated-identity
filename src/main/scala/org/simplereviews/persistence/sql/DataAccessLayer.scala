@@ -95,7 +95,8 @@ class DataAccessLayer(dataAccessLayerProvider: DataAccessLayerProvider)(implicit
 
             val futureEmail =
               updateUserRequest
-                .email.filter(_ != user.email)
+                .email
+                .filter(_ != user.email)
                 .map(updateEmail(userId, _))
                 .getOrElse(Future.successful(user.?))
 

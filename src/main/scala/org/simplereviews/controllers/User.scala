@@ -1,12 +1,11 @@
 package org.simplereviews.controllers
 
-import org.simplereviews.controllers.User.{ InvalidPassword, PasswordDoesntMatch, UserDoesNotExist }
+import org.simplereviews.controllers.User.{ InvalidPassword, PasswordDoesntMatch, UserDoesNotExist, UserWithEmailAlreadyExists }
 import org.simplereviews.controllers.requests.{ ChangePasswordRequest, UpdateUserRequest }
 import org.simplereviews.controllers.support.RouteSupport
 import org.simplereviews.guice.ModulesProvider
 import org.simplereviews.models.exceptions.RejectionException
 import org.simplereviews.models._
-
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
 import org.byrde.commons.utils.TryUtils._
 import org.byrde.commons.utils.FutureUtils._
@@ -19,6 +18,8 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ RejectionHandler, Route }
 import akka.http.scaladsl.server.directives.MarshallingEntityWithRequestDirective
+
+import org.postgresql.util.PSQLException
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
@@ -87,6 +88,12 @@ class User(val modulesProvider: ModulesProvider)(implicit val ec: ExecutionConte
       .persistence
       .UsersDAO
       .updateWithUpdateUserRequest(userId, updateUserRequest)
+      .recoverWith {
+        case ex: PSQLException if ex.getMessage.contains("duplicate key value") =>
+          Future.failed(UserWithEmailAlreadyExists(updateUserRequest.email.get))
+        case ex =>
+          throw ex
+      }
       .map {
         case Some(user) =>
           user.!+
@@ -134,6 +141,9 @@ object User {
   final case object UserDoesNotExist
     extends RejectionException
 
+  final case class UserWithEmailAlreadyExists(email: String)
+    extends RejectionException
+
   val handler: RejectionHandler =
     RejectionHandler
       .newBuilder()
@@ -148,6 +158,10 @@ object User {
       .handle {
         case UserDoesNotExist =>
           complete((NotFound, s"The user you are attempting to update does not exist"))
+      }
+      .handle {
+        case UserWithEmailAlreadyExists(email) =>
+          complete((BadRequest, s"User with email: $email already exists"))
       }
       .result()
 }
