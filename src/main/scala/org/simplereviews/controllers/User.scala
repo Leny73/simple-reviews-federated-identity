@@ -1,11 +1,12 @@
 package org.simplereviews.controllers
 
-import org.simplereviews.controllers.User.{ InvalidPassword, PasswordDoesntMatch, UserDoesNotExist, UserWithEmailAlreadyExists }
-import org.simplereviews.controllers.requests.{ ChangePasswordRequest, UpdateUserRequest }
+import org.simplereviews.controllers.User._
+import org.simplereviews.controllers.requests.{ChangePasswordRequest, UpdateUserRequest}
 import org.simplereviews.controllers.support.RouteSupport
 import org.simplereviews.guice.ModulesProvider
 import org.simplereviews.models.exceptions.RejectionException
 import org.simplereviews.models._
+
 import org.byrde.commons.models.services.CommonsServiceResponseDictionary._
 import org.byrde.commons.utils.TryUtils._
 import org.byrde.commons.utils.FutureUtils._
@@ -13,15 +14,14 @@ import org.byrde.commons.utils.auth.conf.JwtConfig
 import org.byrde.commons.utils.OptionUtils._
 
 import akka.http.scaladsl.model.RemoteAddress
-import akka.http.scaladsl.model.StatusCodes.{ BadRequest, NotFound }
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, NotFound}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ RejectionHandler, Route }
+import akka.http.scaladsl.server.{RejectionHandler, Route}
 import akka.http.scaladsl.server.directives.MarshallingEntityWithRequestDirective
-
 import org.postgresql.util.PSQLException
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class User(val modulesProvider: ModulesProvider)(implicit val ec: ExecutionContext) extends RouteSupport with MarshallingEntityWithRequestDirective {
@@ -109,11 +109,13 @@ class User(val modulesProvider: ModulesProvider)(implicit val ec: ExecutionConte
         .UsersDAO
         .findByIdAndPassword(userId, password.currentPassword)
 
-    if (password.newPassword != password.verifyNewPassword)
+    if (password.newPassword == password.currentPassword)
+      Future.failed(CantUseTheSamePassword)
+    else if (password.newPassword != password.verifyNewPassword)
       Future.failed(PasswordDoesntMatch)
     else
       query flatMap {
-        case Some(_) =>
+        case Some(user) =>
           modulesProvider
             .tokenStore
             .deleteTokensForUser(userId)
@@ -121,8 +123,15 @@ class User(val modulesProvider: ModulesProvider)(implicit val ec: ExecutionConte
           modulesProvider
             .persistence.UsersDAO
             .updatePassword(userId, password.newPassword)
-            .map { userOpt =>
-              Authentication.issueJwt(ip, userOpt.get, jwtConfig).!+
+            .map { _ =>
+              val token =
+                Authentication.issueJwt(ip, user, jwtConfig)
+
+              modulesProvider
+                .tokenStore
+                .addTokenForUser(user.id, token)
+
+              token.!+
             }
 
         case _ =>
@@ -144,6 +153,9 @@ object User {
   final case class UserWithEmailAlreadyExists(email: String)
     extends RejectionException
 
+  final case object CantUseTheSamePassword
+    extends RejectionException
+
   val handler: RejectionHandler =
     RejectionHandler
       .newBuilder()
@@ -162,6 +174,10 @@ object User {
       .handle {
         case UserWithEmailAlreadyExists(email) =>
           complete((BadRequest, s"User with email: $email already exists"))
+      }
+      .handle {
+        case CantUseTheSamePassword =>
+          complete((BadRequest, s"The new password you entered matches your current password"))
       }
       .result()
 }

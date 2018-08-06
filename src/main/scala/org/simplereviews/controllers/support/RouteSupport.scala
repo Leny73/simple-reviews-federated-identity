@@ -41,7 +41,7 @@ trait RouteSupport extends PlayJsonSupport {
           case ex: RejectionException =>
             reject(ex)
           case _ =>
-            throw Err(ex)
+            failWith(Err(ex))
         }
     }
 }
