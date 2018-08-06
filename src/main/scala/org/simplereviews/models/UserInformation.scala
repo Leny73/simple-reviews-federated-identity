@@ -6,4 +6,6 @@ trait UserInformation {
   def orgId: Long
 
   def isAdmin: Boolean
+
+  def token: String
 }

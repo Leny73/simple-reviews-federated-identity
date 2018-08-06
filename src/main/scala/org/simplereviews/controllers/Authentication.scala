@@ -234,7 +234,8 @@ object Authentication {
       Seq(
         Sub(user.id.toString),
         org.byrde.commons.controllers.actions.auth.definitions.Org(user.organizationId.toString),
-        org.byrde.commons.controllers.actions.auth.definitions.Admin(user.isAdmin.toString)
+        org.byrde.commons.controllers.actions.auth.definitions.Admin(user.isAdmin.toString),
+        org.byrde.commons.controllers.actions.auth.definitions.Token(user.token)
       )
 
     JsonWebTokenWrapper(jwtConfig.copy(saltOpt = salt(ip))).encode(claims)
@@ -299,24 +300,25 @@ object Authentication {
 
   private def verifyTokenStore(jwt: Jwt with RawJwt, requiresAdmin: Boolean)(implicit modulesProvider: ModulesProvider): Directive1[Jwt with UserInformation] =
     extractClaimsFromJwt(jwt) match {
-      case (Some(userId), Some(orgId), Some(isAdmin)) if !requiresAdmin || requiresAdmin && isAdmin =>
+      case (Some(userId), Some(orgId), Some(isAdmin), Some(token)) if !requiresAdmin || requiresAdmin && isAdmin =>
         onSuccess(modulesProvider.tokenStore.tokenExistsForUser(userId, jwt.raw)) flatMap { exists =>
           if (!exists)
             reject(NoTokenReference)
           else
-            provide(generateJwtWithUserInformation(userId, orgId, isAdmin, jwt))
+            provide(generateJwtWithUserInformation(userId, orgId, isAdmin, token, jwt))
         }
-      case (Some(_), Some(_), Some(isAdmin)) if requiresAdmin && !isAdmin =>
+      case (Some(_), Some(_), Some(isAdmin), Some(_)) if requiresAdmin && !isAdmin =>
         reject(AuthorizationFailedRejection)
-      case (_, _, _) =>
+      case (_, _, _, _) =>
         reject(MissingTokenClaims)
     }
 
-  private def extractClaimsFromJwt(jwt: Jwt): (Option[Id], Option[Id], Option[Boolean]) =
+  private def extractClaimsFromJwt(jwt: Jwt): (Option[Id], Option[Id], Option[Boolean], Option[String]) =
     (
       jwt.getClaim[Sub].flatMap(x => Try(x.value.toLong).toOption),
       jwt.getClaim[org.byrde.commons.controllers.actions.auth.definitions.Org].flatMap(x => Try(x.value.toLong).toOption),
-      jwt.getClaim[org.byrde.commons.controllers.actions.auth.definitions.Admin].flatMap(x => Try(x.value.toBoolean).toOption)
+      jwt.getClaim[org.byrde.commons.controllers.actions.auth.definitions.Admin].flatMap(x => Try(x.value.toBoolean).toOption),
+      jwt.getClaim[org.byrde.commons.controllers.actions.auth.definitions.Token].map(_.value)
     )
 
   private def generateJwtWithRawJwt(_raw: Token, jwt: Jwt): Jwt with RawJwt =
@@ -334,7 +336,7 @@ object Authentication {
         _raw
     }
 
-  private def generateJwtWithUserInformation(_id: Id, _orgId: Id, _isAdmin: Boolean, jwt: Jwt): Jwt with UserInformation =
+  private def generateJwtWithUserInformation(_id: Id, _orgId: Id, _isAdmin: Boolean, _token: String, jwt: Jwt): Jwt with UserInformation =
     new Jwt with UserInformation {
       override def getClaim[T <: ClaimValue](implicit evidence$2: ClassTag[T]): Option[T] =
         jwt.getClaim
@@ -353,5 +355,8 @@ object Authentication {
 
       override def isAdmin: Boolean =
         _isAdmin
+
+      override def token: String =
+        _token
     }
 }
