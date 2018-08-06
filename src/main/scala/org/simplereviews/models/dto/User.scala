@@ -21,13 +21,10 @@ case class User(
     firstName: String,
     lastName: String,
     isAdmin: Boolean,
-    imageToken: String
+    token: String
 ) extends BaseEntity {
   lazy val name =
     s"$firstName $lastName"
-
-  lazy val imageKey: String =
-    s"$organizationId/$imageToken"
 }
 
 object User {
@@ -50,7 +47,7 @@ object User {
           "firstName" -> o.firstName,
           "lastName" -> o.lastName,
           "isAdmin" -> o.isAdmin,
-          "imageKey" -> o.imageKey
+          "token" -> o.token
         ) +? passwordOpt.map(password => "password" -> JsString(password))
       }
     }

@@ -20,7 +20,7 @@ class DataAccessLayerProvider @Inject() (configuration: Configuration) extends T
     this
 
   class Users(_tableTag: Tag) extends BaseTableA[User](_tableTag, "users") {
-    def * = (id, organizationId, email, password, firstName, lastName, isAdmin, imageToken) <> ((User.apply _).tupled, User.unapply)
+    def * = (id, organizationId, email, password, firstName, lastName, isAdmin, token) <> ((User.apply _).tupled, User.unapply)
 
     override def id: Rep[Long] =
       column[Long]("id", O.AutoInc)
@@ -31,7 +31,7 @@ class DataAccessLayerProvider @Inject() (configuration: Configuration) extends T
     val firstName: Rep[String] = column[String]("first_name", O.Length(255, varying = true))
     val lastName: Rep[String] = column[String]("last_name", O.Length(255, varying = true))
     val isAdmin: Rep[Boolean] = column[Boolean]("is_admin")
-    val imageToken: Rep[String] = column[String]("image_token", O.Length(255, varying = true))
+    val token: Rep[String] = column[String]("token", O.Length(255, varying = true))
 
     lazy val userPK = primaryKey("id", (organizationId, email))
     lazy val organizationFk = foreignKey("fk_organization", organizationId, OrganizationsTQ)(_.id)

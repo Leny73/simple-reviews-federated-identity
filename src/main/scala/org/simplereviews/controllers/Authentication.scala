@@ -2,8 +2,8 @@ package org.simplereviews.controllers
 
 import io.igl.jwt._
 
-import org.simplereviews.controllers.Authentication.{InvalidLoginCredentials, UserDoesNotExist}
-import org.simplereviews.controllers.requests.{ForgotPasswordRequest, SignInRequest}
+import org.simplereviews.controllers.Authentication.{ InvalidLoginCredentials, UserDoesNotExist }
+import org.simplereviews.controllers.requests.{ ForgotPasswordRequest, SignInRequest }
 import org.simplereviews.controllers.support.RouteSupport
 import org.simplereviews.guice.ModulesProvider
 import org.simplereviews.models._
@@ -19,16 +19,16 @@ import org.byrde.commons.utils.auth.conf.JwtConfig
 
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.RemoteAddress
-import akka.http.scaladsl.model.StatusCodes.{Forbidden, NotFound, Unauthorized}
+import akka.http.scaladsl.model.StatusCodes.{ Forbidden, NotFound, Unauthorized }
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.directives.{HttpRequestWithEntity, MarshallingEntityWithRequestDirective}
+import akka.http.scaladsl.server.directives.{ HttpRequestWithEntity, MarshallingEntityWithRequestDirective }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 class Authentication(val modulesProvider: ModulesProvider)(implicit val ec: ExecutionContext) extends RouteSupport with MarshallingEntityWithRequestDirective {
   lazy val routes: Route =
